@@ -11,7 +11,7 @@ from app.config import get_settings
 from app.models.base import Base
 
 # Import all models so Alembic can detect them
-from app.models import user, event, subscription, notification, organiser_request, saved_event  # noqa: F401
+from app.models import user, event, subscription, notification, organiser_request, saved_event, platform_setting  # noqa: F401
 
 config = context.config
 settings = get_settings()

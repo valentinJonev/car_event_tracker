@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { LogIn } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 export default function LoginPage() {
@@ -19,22 +20,27 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-[70vh] items-center justify-center">
       <div className="w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-8">
-          {t('auth.signIn')}
-        </h1>
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/5 border border-white/10 mb-4">
+            <LogIn className="w-7 h-7 text-white" />
+          </div>
+          <h1 className="text-3xl font-bold text-white">
+            {t('auth.signIn')}
+          </h1>
+        </div>
 
         {justRegistered && (
-          <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded-md mb-4 text-sm">
+          <div className="bg-emerald-500/10 border border-emerald-400/20 text-emerald-300 px-4 py-3 rounded-2xl mb-4 text-sm">
             {t('auth.accountCreatedSuccess')}
           </div>
         )}
 
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-md mb-4 text-sm">
-            {error}
+          <div className="bg-red-500/10 border border-red-400/20 text-red-300 px-4 py-3 rounded-2xl mb-4 text-sm flex items-center justify-between">
+            <span>{error}</span>
             <button
               onClick={clearError}
-              className="float-right text-red-400 hover:text-red-600 dark:text-red-400 dark:hover:text-red-200"
+              className="text-red-400 hover:text-red-200 ml-2"
             >
               &times;
             </button>
@@ -43,12 +49,12 @@ export default function LoginPage() {
 
         <form
           onSubmit={onSubmit}
-          className="bg-white dark:bg-gray-800 shadow-md rounded-lg px-8 py-8 space-y-5"
+          className="bg-white/5 border border-white/10 backdrop-blur rounded-3xl px-8 py-8 space-y-5"
         >
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              className="block text-sm font-medium text-zinc-300 mb-1"
             >
               {t('auth.email')}
             </label>
@@ -58,7 +64,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full bg-white/5 border border-white/10 text-white rounded-2xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/20 placeholder-zinc-500"
               placeholder={t('auth.emailPlaceholder')}
             />
           </div>
@@ -66,7 +72,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              className="block text-sm font-medium text-zinc-300 mb-1"
             >
               {t('auth.password')}
             </label>
@@ -76,7 +82,7 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full bg-white/5 border border-white/10 text-white rounded-2xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/20 placeholder-zinc-500"
               placeholder={t('auth.passwordPlaceholder')}
             />
           </div>
@@ -84,40 +90,42 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-white text-zinc-900 font-medium py-2.5 rounded-full transition-colors hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? t('auth.signingIn') : t('auth.signIn')}
           </button>
 
-          {/* Social login placeholder buttons */}
+          {/* Social login divider */}
           <div className="relative my-4">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+              <div className="w-full border-t border-white/10" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="bg-white dark:bg-gray-800 px-2 text-gray-500 dark:text-gray-400">{t('common.or')}</span>
+              <span className="bg-zinc-900 px-3 text-zinc-500">{t('common.or')}</span>
             </div>
           </div>
 
           <a
             href="/api/v1/auth/oauth/facebook"
-            className="w-full flex items-center justify-center border border-gray-300 dark:border-gray-600 rounded-md py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            className="w-full flex items-center justify-center gap-2 border border-white/10 bg-white/5 rounded-full py-2.5 text-sm font-medium text-zinc-200 hover:bg-white/10 transition-colors"
           >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
             {t('auth.continueWithFacebook')}
           </a>
           <a
             href="/api/v1/auth/oauth/instagram"
-            className="w-full flex items-center justify-center border border-gray-300 dark:border-gray-600 rounded-md py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            className="w-full flex items-center justify-center gap-2 border border-white/10 bg-white/5 rounded-full py-2.5 text-sm font-medium text-zinc-200 hover:bg-white/10 transition-colors"
           >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
             {t('auth.continueWithInstagram')}
           </a>
         </form>
 
-        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
+        <p className="text-center text-sm text-zinc-500 mt-6">
           {t('auth.dontHaveAccount')}{' '}
           <Link
             to="/register"
-            className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
+            className="text-white hover:text-zinc-300 font-medium"
           >
             {t('auth.signUp')}
           </Link>

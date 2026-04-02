@@ -2,13 +2,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import type { Subscription, SubscriptionListResponse } from '../types';
 
-export function useSubscriptions() {
+export function useSubscriptions(options?: { enabled?: boolean }) {
   return useQuery<SubscriptionListResponse>({
     queryKey: ['subscriptions'],
     queryFn: async () => {
       const { data } = await api.get('/subscriptions/');
       return data;
     },
+    enabled: options?.enabled ?? true,
   });
 }
 

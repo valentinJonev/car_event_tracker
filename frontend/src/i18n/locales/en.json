@@ -1,6 +1,7 @@
 {
   "common": {
     "appName": "Stay Informed",
+    "appTagline": "All Car Events in One Place",
     "loading": "Loading...",
     "saving": "Saving...",
     "previous": "Previous",
@@ -12,6 +13,7 @@
     "reset": "Reset",
     "save": "Save",
     "edit": "Edit",
+    "share": "Share",
     "or": "or",
     "by": "by",
     "to": "to",
@@ -31,13 +33,16 @@
     "sun": "Sun"
   },
   "nav": {
+    "home": "Home",
     "events": "Events",
     "map": "Map",
     "organisers": "Organisers",
+    "calendar": "Calendar",
     "createEvent": "Create Event",
     "admin": "Admin",
     "signIn": "Sign In",
-    "signUp": "Sign Up"
+    "signUp": "Sign Up",
+    "menu": "Menu"
   },
   "theme": {
     "toggleDarkMode": "Toggle dark mode",
@@ -47,6 +52,7 @@
   "userDropdown": {
     "myProfile": "My Profile",
     "myCalendar": "My Calendar",
+    "adminPanel": "Admin Panel",
     "becomeOrganiser": "Become Organiser",
     "logout": "Logout"
   },
@@ -91,10 +97,33 @@
     "cancelled": "Cancelled",
     "completed": "Completed"
   },
+  "home": {
+    "eyebrow": "Discover, map, and save car events",
+    "title": "A social event platform for track days, meetups, drifting, and road runs.",
+    "description": "Browse what is trending, catch the newest events, and save your favourites in your calendar.",
+    "allEvents": "All events",
+    "gearheads": "Gearheads",
+    "organizers": "Organizers",
+    "featuredEvent": "Featured event",
+    "featuredSubtitle": "Latest addition",
+    "adminPick": "Admin's pick",
+    "mostSaved": "Most saved by the community",
+    "viewAllEvents": "View all events",
+    "recentlyAdded": "Recently added events",
+    "recentlyAddedDesc": "Top 3 newest events added to the platform."
+  },
   "eventList": {
     "title": "Upcoming Events",
+    "eyebrow": "Search the full event catalog",
+    "heroTitle": "All events in one place.",
+    "heroDescription": "Filter and find the exact event you want.",
+    "browseDesc": "Browse every event and refine the list with filters.",
+    "matching": "matching",
     "searchPlaceholder": "Search events...",
     "allTypes": "All Types",
+    "allStatuses": "All statuses",
+    "upcoming": "Upcoming",
+    "cancelled": "Cancelled",
     "listView": "List view",
     "calendarView": "Calendar view",
     "list": "List",
@@ -104,6 +133,8 @@
   },
   "eventDetail": {
     "backToEvents": "Back to events",
+    "viewDetails": "View details",
+    "openInMaps": "Open in Google Maps",
     "addToCalendar": "Add to Calendar",
     "inMyCalendar": "In My Calendar",
     "removeFromCalendar": "Remove from My Calendar",
@@ -149,6 +180,12 @@
     "required": "*"
   },
   "eventMap": {
+    "eyebrow": "Explore events visually",
+    "heroTitle": "Find events through the map.",
+    "heroDescription": "See event locations at a glance, inspect pins by event type, and move straight into event details.",
+    "mapDiscovery": "Map discovery",
+    "mapDesc": "Pins react to your current filters. Click one to inspect the event.",
+    "visiblePins": "visible pins",
     "filterEvents": "Filter Events",
     "filters": "Filters",
     "applyFilters": "Apply Filters",
@@ -170,6 +207,8 @@
   },
   "organisers": {
     "title": "Organisers",
+    "eyebrow": "Community of event creators",
+    "heroDescription": "Discover the people behind the events. Follow your favourite organisers to get notified about new events.",
     "searchPlaceholder": "Search organisers...",
     "failedToLoad": "Failed to load organisers. Please try again later.",
     "noOrganisers": "No organisers found. Try adjusting your search.",
@@ -190,6 +229,11 @@
   },
   "myCalendar": {
     "title": "My Calendar",
+    "eyebrow": "Your saved plans",
+    "heroTitle": "Track your subscribed events.",
+    "heroDescription": "Keep your saved events organized in a personal calendar and revisit them whenever you need.",
+    "pageDesc": "A personal calendar populated from your saved events.",
+    "savedLabel": "saved",
     "calendar": "Calendar",
     "list": "List",
     "today": "Today",

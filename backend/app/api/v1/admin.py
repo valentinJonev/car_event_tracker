@@ -14,13 +14,23 @@ from app.schemas.organiser_request import (
     OrgRequestResponse,
     OrgRequestReview,
 )
+from app.schemas.stats import FeaturedEventSettingResponse, SetFeaturedEventRequest
+from app.services.event import get_event_by_id
 from app.services.organiser_request import (
     get_request_by_id,
     list_pending_requests,
     review_request,
 )
+from app.services.stats import (
+    clear_admin_featured_event,
+    get_admin_featured_event_id,
+    set_admin_featured_event,
+)
 
 router = APIRouter()
+
+
+# ── Organiser requests ───────────────────────────────────────────────
 
 
 @router.get("/organiser-requests/", response_model=OrgRequestListResponse)
@@ -60,3 +70,60 @@ async def review_organiser_request(
 
     reviewed = await review_request(db, request, data.status, current_user.id)
     return reviewed
+
+
+# ── Featured event override ──────────────────────────────────────────
+
+
+@router.get("/featured-event", response_model=FeaturedEventSettingResponse)
+async def get_featured_event_override(
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get the current admin-overridden featured event (if any)."""
+    event_id = await get_admin_featured_event_id(db)
+    if event_id:
+        return FeaturedEventSettingResponse(
+            event_id=event_id,
+            message="Featured event override is active.",
+        )
+    return FeaturedEventSettingResponse(
+        event_id=None,
+        message="No override set. Featured event is determined by most saves.",
+    )
+
+
+@router.put("/featured-event", response_model=FeaturedEventSettingResponse)
+async def set_featured_event_override(
+    data: SetFeaturedEventRequest,
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    """Set or update the admin-overridden featured event."""
+    event = await get_event_by_id(db, data.event_id)
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Event not found.",
+        )
+    await set_admin_featured_event(db, data.event_id)
+    return FeaturedEventSettingResponse(
+        event_id=data.event_id,
+        message="Featured event override set successfully.",
+    )
+
+
+@router.delete(
+    "/featured-event",
+    response_model=FeaturedEventSettingResponse,
+)
+async def clear_featured_event_override(
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove the admin override so featured event falls back to most-saved."""
+    await clear_admin_featured_event(db)
+    return FeaturedEventSettingResponse(
+        event_id=None,
+        message="Featured event override cleared. Falling back to most saves.",
+    )

@@ -1,178 +1,239 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useEvents } from '../hooks/useEvents';
-import EventCard from '../components/EventCard';
 import EventCalendar from '../components/EventCalendar';
+import PageHero from '../components/PageHero';
+import FilterBar from '../components/FilterBar';
+import type { StatusFilter } from '../components/FilterBar';
+import EventDetailModal from '../components/EventDetailModal';
+import { List, Calendar, MapPin, Users, Clock3 } from 'lucide-react';
+import { formatEventDate } from '../utils/dateFormat';
 import type { EventType } from '../types';
-
-const EVENT_TYPE_VALUES: (EventType | '')[] = [
-  '', 'racing', 'car_show', 'track_day', 'meetup', 'drift', 'drag', 'hillclimb', 'other',
-];
 
 type ViewMode = 'list' | 'calendar';
 
-/** SVG icon for list view. */
-function ListIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-    </svg>
-  );
-}
-
-/** SVG icon for calendar view. */
-function CalendarIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-    </svg>
-  );
-}
-
 export default function EventListPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const detailId = searchParams.get('detail');
+
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [search, setSearch] = useState('');
   const [eventType, setEventType] = useState<EventType | ''>('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('');
   const [page, setPage] = useState(0);
   const limit = 12;
 
-  // List view data (only fetched when in list mode to avoid wasted requests)
+  // Map the UI status filter to the API status param
+  const apiStatus = statusFilter === 'upcoming' ? 'published' : statusFilter === 'cancelled' ? 'cancelled' : undefined;
+
   const { data, isLoading, isError } = useEvents(
     {
       search: search || undefined,
       event_type: eventType || undefined,
+      status: apiStatus,
       offset: page * limit,
       limit,
     },
-    viewMode === 'list', // disable query when calendar is active
+    viewMode === 'list',
   );
 
   const totalPages = data ? Math.ceil(data.total / limit) : 0;
 
+  const openDetail = (eventId: string) => {
+    setSearchParams({ detail: eventId });
+  };
+
+  const closeDetail = () => {
+    setSearchParams({});
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header row */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-          {t('eventList.title')}
-        </h1>
+      {/* Hero */}
+      <PageHero
+        eyebrow={t('eventList.eyebrow', { defaultValue: 'Search the full event catalog' })}
+        title={t('eventList.heroTitle', { defaultValue: 'All events in one place.' })}
+        description={t('eventList.heroDescription', {
+          defaultValue:
+            'Filter by type, city, organizer, and date to find the exact event you want.',
+        })}
+        accent="blue"
+      />
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          {/* Search */}
-          <input
-            type="text"
-            placeholder={t('eventList.searchPlaceholder')}
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(0);
-            }}
-            className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-
-          {/* Event type filter */}
-          <select
-            value={eventType}
-            onChange={(e) => {
-              setEventType(e.target.value as EventType | '');
-              setPage(0);
-            }}
-            className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            {EVENT_TYPE_VALUES.map((val) => (
-              <option key={val} value={val}>
-                {val === '' ? t('eventList.allTypes') : t(`eventTypes.${val}`)}
-              </option>
-            ))}
-          </select>
-
-          {/* View toggle */}
-          <div className="flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden self-start">
+      {/* Filters + view toggle */}
+      <div className="rounded-3xl border border-white/10 bg-zinc-900 p-4">
+        <FilterBar
+          search={search}
+          onSearchChange={(val) => {
+            setSearch(val);
+            setPage(0);
+          }}
+          eventType={eventType}
+          onEventTypeChange={(val) => {
+            setEventType(val);
+            setPage(0);
+          }}
+          statusFilter={statusFilter}
+          onStatusFilterChange={(val) => {
+            setStatusFilter(val);
+            setPage(0);
+          }}
+        >
+          {/* View toggle slot */}
+          <div className="inline-flex gap-1 rounded-2xl bg-white/5 p-1 justify-self-end">
             <button
               onClick={() => setViewMode('list')}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${
+              className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
                 viewMode === 'list'
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                  ? 'bg-white text-zinc-900 shadow-sm'
+                  : 'text-zinc-400 hover:text-white'
               }`}
-              aria-label={t('eventList.listView')}
               title={t('eventList.listView')}
             >
-              <ListIcon className="w-4 h-4" />
+              <List className="h-4 w-4" />
               <span className="hidden sm:inline">{t('eventList.list')}</span>
             </button>
             <button
               onClick={() => setViewMode('calendar')}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors border-l border-gray-300 dark:border-gray-600 ${
+              className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
                 viewMode === 'calendar'
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                  ? 'bg-white text-zinc-900 shadow-sm'
+                  : 'text-zinc-400 hover:text-white'
               }`}
-              aria-label={t('eventList.calendarView')}
               title={t('eventList.calendarView')}
             >
-              <CalendarIcon className="w-4 h-4" />
+              <Calendar className="h-4 w-4" />
               <span className="hidden sm:inline">{t('eventList.calendar')}</span>
             </button>
           </div>
-        </div>
+        </FilterBar>
       </div>
 
-      {/* ── Calendar View ── */}
+      {/* Calendar View */}
       {viewMode === 'calendar' && (
         <EventCalendar
           eventTypeFilter={eventType || undefined}
           searchFilter={search || undefined}
+          statusFilter={apiStatus}
+          onEventClick={(event) => openDetail(event.id)}
         />
       )}
 
-      {/* ── List View ── */}
+      {/* List View */}
       {viewMode === 'list' && (
-        <>
+        <div className="rounded-[32px] border border-white/10 bg-zinc-900 p-5 shadow-xl">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">{t('eventList.title')}</h3>
+              <p className="text-sm text-zinc-400">
+                {t('eventList.browseDesc', {
+                  defaultValue: 'Browse every event and refine the list with filters.',
+                })}
+              </p>
+            </div>
+            {data && (
+              <div className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">
+                {data.total} {t('eventList.matching', { defaultValue: 'matching' })}
+              </div>
+            )}
+          </div>
+
+          {/* Loading */}
           {isLoading && (
             <div className="flex justify-center py-20">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600" />
+              <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-white" />
             </div>
           )}
 
+          {/* Error */}
           {isError && (
-            <div className="text-center py-20 text-red-500">
+            <div className="rounded-3xl border border-dashed border-red-400/20 bg-red-500/5 p-8 text-center text-sm text-red-300">
               {t('eventList.failedToLoad')}
             </div>
           )}
 
+          {/* Empty */}
           {data && data.items.length === 0 && (
-            <div className="text-center py-20 text-gray-500 dark:text-gray-400">
+            <div className="rounded-3xl border border-dashed border-white/10 bg-white/5 p-8 text-center text-sm text-zinc-400">
               {t('eventList.noEvents')}
             </div>
           )}
 
+          {/* Event cards grid */}
           {data && data.items.length > 0 && (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {data.items.map((event) => (
-                  <EventCard key={event.id} event={event} />
+                  <button
+                    key={event.id}
+                    onClick={() => openDetail(event.id)}
+                    className={`rounded-3xl border p-4 text-left transition-colors ${
+                      event.status === 'cancelled'
+                        ? 'border-red-400/20 bg-red-500/5 opacity-75'
+                        : 'border-white/10 bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="mb-4 flex items-center justify-between">
+                      <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300">
+                        {t(`eventTypes.${event.event_type}`)}
+                      </div>
+                      {event.status === 'cancelled' ? (
+                        <span className="rounded-full border border-red-400/30 bg-red-500/10 px-2 py-0.5 text-[10px] font-medium text-red-200">
+                          {t('eventStatus.cancelled')}
+                        </span>
+                      ) : (
+                        <Clock3 className="h-4 w-4 text-zinc-500" />
+                      )}
+                    </div>
+                    <div
+                      className={`text-lg font-semibold ${
+                        event.status === 'cancelled' ? 'text-zinc-400 line-through' : 'text-white'
+                      }`}
+                    >
+                      {event.title}
+                    </div>
+                    <div className="mt-2 flex items-center gap-2 text-sm text-zinc-400">
+                      <Calendar className="h-4 w-4 flex-shrink-0" />
+                      <span>
+                        {formatEventDate(event.start_datetime, event.is_all_day, i18n.language)}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center gap-2 text-sm text-zinc-400">
+                      <MapPin className="h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">{event.location_name}</span>
+                    </div>
+                    <div className="mt-4 flex items-center justify-between text-sm text-zinc-400">
+                      <span>{event.organiser?.display_name ?? ''}</span>
+                      {event.max_attendees && (
+                        <span className="inline-flex items-center gap-1">
+                          <Users className="h-4 w-4" /> {event.max_attendees}
+                        </span>
+                      )}
+                    </div>
+                  </button>
                 ))}
               </div>
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 pt-4">
+                <div className="mt-6 flex items-center justify-center gap-3">
                   <button
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
                     disabled={page === 0}
-                    className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300"
+                    className="min-w-[6.5rem] rounded-full border border-white/10 px-4 py-2 text-center text-sm text-zinc-300 transition-colors hover:bg-white/10 disabled:opacity-40"
                   >
                     {t('common.previous')}
                   </button>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="text-sm text-zinc-400">
                     {t('common.page', { current: page + 1, total: totalPages })}
                   </span>
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                     disabled={page >= totalPages - 1}
-                    className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300"
+                    className="min-w-[6.5rem] rounded-full border border-white/10 px-4 py-2 text-center text-sm text-zinc-300 transition-colors hover:bg-white/10 disabled:opacity-40"
                   >
                     {t('common.next')}
                   </button>
@@ -180,8 +241,11 @@ export default function EventListPage() {
               )}
             </>
           )}
-        </>
+        </div>
       )}
+
+      {/* Detail modal */}
+      {detailId && <EventDetailModal eventId={detailId} onClose={closeDetail} />}
     </div>
   );
 }

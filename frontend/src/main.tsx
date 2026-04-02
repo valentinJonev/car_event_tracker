@@ -2,12 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
-import { useThemeStore } from './store/themeStore';
 import './i18n';
 import './index.css';
-
-// Initialize theme before first render (avoids flash)
-useThemeStore.getState().initializeTheme();
 
 const queryClient = new QueryClient({
   defaultOptions: {

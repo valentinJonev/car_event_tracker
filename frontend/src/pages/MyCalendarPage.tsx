@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Calendar, List, ChevronLeft, ChevronRight, Trash2, X } from 'lucide-react';
 import {
   startOfMonth,
   endOfMonth,
@@ -27,6 +28,8 @@ import {
 } from '../hooks/useCalendar';
 import { EVENT_TYPE_CONFIG } from '../constants/eventTypes';
 import { formatEventDate } from '../utils/dateFormat';
+import PageHero from '../components/PageHero';
+import EventDetailModal from '../components/EventDetailModal';
 import type { Event } from '../types';
 
 const DATE_LOCALES: Record<string, Locale> = { en: enUS, bg };
@@ -38,14 +41,10 @@ const WEEKDAY_KEYS = [
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
-/** Extract Event objects from the saved-events response. */
-function extractEvents(
-  items: { event: Event }[]
-): Event[] {
+function extractEvents(items: { event: Event }[]): Event[] {
   return items.map((s) => s.event);
 }
 
-/** Group events by day key. */
 function groupByDay(events: Event[]): Map<string, Event[]> {
   const map = new Map<string, Event[]>();
   for (const event of events) {
@@ -83,7 +82,6 @@ function CalendarSubscription() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
       const textarea = document.createElement('textarea');
       textarea.value = feedUrl;
       document.body.appendChild(textarea);
@@ -95,9 +93,7 @@ function CalendarSubscription() {
     }
   };
 
-  const handleGenerate = () => {
-    generateToken.mutate();
-  };
+  const handleGenerate = () => generateToken.mutate();
 
   const handleRevoke = () => {
     if (!confirmRevoke) {
@@ -112,18 +108,13 @@ function CalendarSubscription() {
   if (isLoading) return null;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-          </svg>
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('calendarSubscription.title')}</h3>
-        </div>
+    <div className="rounded-3xl border border-white/10 bg-white/5 overflow-hidden">
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+        <h3 className="text-sm font-semibold text-zinc-300">{t('calendarSubscription.title')}</h3>
         {hasToken && (
           <button
             onClick={() => setShowInstructions(!showInstructions)}
-            className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 font-medium"
+            className="text-xs text-red-300 hover:text-red-200 font-medium"
           >
             {showInstructions ? t('calendarSubscription.hideInstructions') : t('calendarSubscription.howToSubscribe')}
           </button>
@@ -132,78 +123,54 @@ function CalendarSubscription() {
 
       <div className="px-4 py-3 space-y-3">
         {!hasToken ? (
-          /* ── No token yet ── */
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="flex-1">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {t('calendarSubscription.subscribeDescription')}
-              </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                {t('calendarSubscription.readOnlyFeed')}
-              </p>
+              <p className="text-sm text-zinc-400">{t('calendarSubscription.subscribeDescription')}</p>
+              <p className="text-xs text-zinc-500 mt-1">{t('calendarSubscription.readOnlyFeed')}</p>
             </div>
             <button
               onClick={handleGenerate}
               disabled={generateToken.isPending}
-              className="flex-shrink-0 inline-flex items-center gap-1.5 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
+              className="flex-shrink-0 rounded-2xl bg-white px-4 py-2.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200 disabled:opacity-50"
             >
               {generateToken.isPending ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-zinc-900" />
               ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                </svg>
+                t('calendarSubscription.generateLink')
               )}
-              {t('calendarSubscription.generateLink')}
             </button>
           </div>
         ) : (
-          /* ── Has token ── */
           <>
             <div className="flex items-center gap-2">
-              <div className="flex-1 min-w-0 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2">
-                <code className="text-xs text-gray-600 dark:text-gray-400 break-all select-all">{feedUrl}</code>
+              <div className="flex-1 min-w-0 rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
+                <code className="text-xs text-zinc-400 break-all select-all">{feedUrl}</code>
               </div>
               <button
                 onClick={handleCopy}
-                className={`flex-shrink-0 inline-flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-md border transition-colors ${
+                className={`flex-shrink-0 rounded-2xl border px-3 py-2 text-sm font-medium transition-colors ${
                   copied
-                    ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400'
-                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
+                    ? 'border-green-400/30 bg-green-500/10 text-green-300'
+                    : 'border-white/10 bg-white/5 text-zinc-200 hover:bg-white/10'
                 }`}
               >
-                {copied ? (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    {t('calendarSubscription.copied')}
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                    {t('calendarSubscription.copy')}
-                  </>
-                )}
+                {copied ? t('calendarSubscription.copied') : t('calendarSubscription.copy')}
               </button>
             </div>
 
-            {/* Action buttons */}
             <div className="flex items-center gap-3 text-xs">
               <button
                 onClick={handleGenerate}
                 disabled={generateToken.isPending}
-                className="text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 font-medium disabled:opacity-50"
+                className="text-zinc-400 hover:text-white font-medium disabled:opacity-50"
               >
                 {generateToken.isPending ? t('calendarSubscription.regenerating') : t('calendarSubscription.regenerateLink')}
               </button>
-              <span className="text-gray-300 dark:text-gray-600">|</span>
+              <span className="text-zinc-700">|</span>
               <button
                 onClick={handleRevoke}
                 disabled={revokeToken.isPending}
-                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium disabled:opacity-50"
+                className="text-red-400 hover:text-red-300 font-medium disabled:opacity-50"
               >
                 {revokeToken.isPending
                   ? t('calendarSubscription.revoking')
@@ -213,75 +180,43 @@ function CalendarSubscription() {
               </button>
             </div>
 
-            {/* Security note */}
-            <p className="text-[11px] text-gray-400 dark:text-gray-500">
-              {t('calendarSubscription.securityNote')}
-            </p>
+            <p className="text-[11px] text-zinc-600">{t('calendarSubscription.securityNote')}</p>
           </>
         )}
 
-        {/* ── Instructions panel ── */}
         {showInstructions && hasToken && (
-          <div className="mt-2 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-4">
-            {/* Apple Calendar */}
+          <div className="mt-2 space-y-4 border-t border-white/10 pt-3">
             <div>
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-base">&#63743;</span>
-                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('calendarSubscription.appleCalendarTitle')}</h4>
-              </div>
-              <ol className="text-xs text-gray-500 dark:text-gray-400 space-y-1 ml-6 list-decimal">
+              <h4 className="mb-1.5 text-sm font-semibold text-zinc-300">
+                &#63743; {t('calendarSubscription.appleCalendarTitle')}
+              </h4>
+              <ol className="ml-6 list-decimal space-y-1 text-xs text-zinc-400">
                 <li>{t('calendarSubscription.appleStep1')}</li>
                 <li dangerouslySetInnerHTML={{ __html: t('calendarSubscription.appleStep2') }} />
                 <li dangerouslySetInnerHTML={{ __html: t('calendarSubscription.appleStep3') }} />
                 <li dangerouslySetInnerHTML={{ __html: t('calendarSubscription.appleStep4') }} />
                 <li dangerouslySetInnerHTML={{ __html: t('calendarSubscription.appleStep5') }} />
               </ol>
-              <p
-                className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 ml-6"
-                dangerouslySetInnerHTML={{ __html: t('calendarSubscription.appleMacNote') }}
-              />
+              <p className="ml-6 mt-1 text-[11px] text-zinc-500" dangerouslySetInnerHTML={{ __html: t('calendarSubscription.appleMacNote') }} />
             </div>
-
-            {/* Google Calendar */}
             <div>
-              <div className="flex items-center gap-2 mb-1.5">
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
-                  <rect width="20" height="20" x="2" y="2" rx="2" fill="#4285F4" />
-                  <rect width="8" height="8" x="8" y="8" rx="1" fill="#fff" />
-                  <rect width="3" height="10" x="4" y="7" rx="0.5" fill="#EA4335" />
-                  <rect width="10" height="3" x="7" y="4" rx="0.5" fill="#FBBC04" />
-                  <rect width="3" height="10" x="17" y="7" rx="0.5" fill="#34A853" />
-                  <rect width="10" height="3" x="7" y="17" rx="0.5" fill="#4285F4" />
-                </svg>
-                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('calendarSubscription.googleCalendarTitle')}</h4>
-              </div>
-              <ol className="text-xs text-gray-500 dark:text-gray-400 space-y-1 ml-6 list-decimal">
+              <h4 className="mb-1.5 text-sm font-semibold text-zinc-300">{t('calendarSubscription.googleCalendarTitle')}</h4>
+              <ol className="ml-6 list-decimal space-y-1 text-xs text-zinc-400">
                 <li>{t('calendarSubscription.googleStep1')}</li>
                 <li>
                   {t('calendarSubscription.googleStep2').split('<0>')[0]}
-                  <a href="https://calendar.google.com" target="_blank" rel="noopener noreferrer" className="text-primary-600 dark:text-primary-400 hover:underline">Google Calendar</a>
+                  <a href="https://calendar.google.com" target="_blank" rel="noopener noreferrer" className="text-red-300 hover:underline">Google Calendar</a>
                   {t('calendarSubscription.googleStep2').split('</0>')[1] ?? ''}
                 </li>
                 <li dangerouslySetInnerHTML={{ __html: t('calendarSubscription.googleStep3') }} />
                 <li dangerouslySetInnerHTML={{ __html: t('calendarSubscription.googleStep4') }} />
                 <li dangerouslySetInnerHTML={{ __html: t('calendarSubscription.googleStep5') }} />
               </ol>
-              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 ml-6">
-                {t('calendarSubscription.googleNote')}
-              </p>
+              <p className="ml-6 mt-1 text-[11px] text-zinc-500">{t('calendarSubscription.googleNote')}</p>
             </div>
-
-            {/* Other apps */}
             <div>
-              <div className="flex items-center gap-2 mb-1.5">
-                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('calendarSubscription.otherAppsTitle')}</h4>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 ml-6">
-                {t('calendarSubscription.otherAppsDesc')}
-              </p>
+              <h4 className="mb-1.5 text-sm font-semibold text-zinc-300">{t('calendarSubscription.otherAppsTitle')}</h4>
+              <p className="ml-6 text-xs text-zinc-400">{t('calendarSubscription.otherAppsDesc')}</p>
             </div>
           </div>
         )}
@@ -295,10 +230,9 @@ function EventChip({ event }: { event: Event }) {
   const isCancelled = event.status === 'cancelled';
   return (
     <div
-      className={`
-        flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] leading-tight truncate
-        ${isCancelled ? 'opacity-50 line-through' : ''}
-      `}
+      className={`flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-[10px] leading-tight sm:text-[11px] ${
+        isCancelled ? 'opacity-50 line-through' : ''
+      }`}
       style={{
         backgroundColor: config.bg + '18',
         color: config.bg,
@@ -335,29 +269,34 @@ function DayCell({
   return (
     <button
       onClick={() => hasEvents && onSelect(day)}
-      className={`
-        relative flex flex-col items-stretch p-1 min-h-[5.5rem] sm:min-h-[7rem] rounded-lg transition-colors text-sm w-full text-left
-        ${!inMonth ? 'text-gray-300 dark:text-gray-600' : 'text-gray-700 dark:text-gray-200'}
-        ${today ? 'ring-2 ring-primary-500 ring-inset' : ''}
-        ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30' : ''}
-        ${hasEvents && inMonth ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50' : 'cursor-default'}
-      `}
+      className={`relative flex min-h-[5.5rem] w-full flex-col items-stretch rounded-xl border p-1 text-left text-sm transition-colors sm:min-h-[7rem] ${
+        !inMonth
+          ? 'border-transparent text-zinc-700'
+          : today
+            ? 'border-red-400/30 bg-red-500/5 text-white'
+            : isSelected
+              ? 'border-red-400/30 bg-red-500/10 text-white'
+              : hasEvents
+                ? 'cursor-pointer border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10'
+                : 'cursor-default border-white/5 text-zinc-400'
+      }`}
     >
       <span
-        className={`
-          text-xs sm:text-sm font-medium leading-none mb-1 self-start
-          ${today ? 'bg-primary-600 text-white w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full' : ''}
-        `}
+        className={`mb-1 self-start text-xs font-medium leading-none sm:text-sm ${
+          today
+            ? 'flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white sm:h-6 sm:w-6'
+            : ''
+        }`}
       >
         {format(day, 'd')}
       </span>
       {hasEvents && inMonth && (
-        <div className="flex flex-col gap-0.5 mt-0.5 overflow-hidden min-w-0">
+        <div className="mt-0.5 flex min-w-0 flex-col gap-0.5 overflow-hidden">
           {events.slice(0, maxVisible).map((e) => (
             <EventChip key={e.id} event={e} />
           ))}
           {overflow > 0 && (
-            <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium pl-1.5">
+            <span className="pl-1.5 text-[10px] font-medium text-zinc-500">
               {t('common.moreCount', { count: overflow })}
             </span>
           )}
@@ -373,78 +312,72 @@ function DayDetailPanel({
   onClose,
   onRemove,
   removing,
+  onOpenDetail,
 }: {
   day: Date;
   events: Event[];
   onClose: () => void;
   onRemove: (eventId: string) => void;
   removing: boolean;
+  onOpenDetail: (eventId: string) => void;
 }) {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
   const lang = i18n.language;
   const dateFnsLocale = DATE_LOCALES[lang] ?? enUS;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+    <div className="overflow-hidden rounded-3xl border border-white/10 bg-zinc-900">
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+        <h3 className="text-sm font-semibold">
           {format(day, 'EEEE, MMMM d, yyyy', { locale: dateFnsLocale })}
-          <span className="ml-2 text-xs font-normal text-gray-400 dark:text-gray-500">
+          <span className="ml-2 text-xs font-normal text-zinc-500">
             {t('common.events_count', { count: events.length })}
           </span>
         </h3>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1" aria-label={t('common.close')}>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+        <button onClick={onClose} className="rounded-full border border-white/10 bg-white/5 p-1 text-zinc-400 hover:text-white" aria-label={t('common.close')}>
+          <X className="h-4 w-4" />
         </button>
       </div>
-      <div className="divide-y divide-gray-100 dark:divide-gray-700 max-h-64 overflow-y-auto">
+      <div className="max-h-64 divide-y divide-white/5 overflow-y-auto">
         {events.map((event) => {
           const config = EVENT_TYPE_CONFIG[event.event_type] ?? EVENT_TYPE_CONFIG.other;
           return (
-            <div key={event.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <div key={event.id} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-white/5">
               <button
-                onClick={() => navigate(`/events/${event.id}`)}
-                className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                onClick={() => onOpenDetail(event.id)}
+                className="flex flex-1 min-w-0 items-center gap-3 text-left"
               >
                 <div
-                  className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm"
+                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm"
                   style={{ backgroundColor: config.bg + '20' }}
                 >
                   {config.emoji}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium truncate ${
-                    event.status === 'cancelled'
-                      ? 'text-gray-400 dark:text-gray-500 line-through'
-                      : 'text-gray-800 dark:text-gray-100'
+                <div className="min-w-0 flex-1">
+                  <p className={`truncate text-sm font-medium ${
+                    event.status === 'cancelled' ? 'text-zinc-500 line-through' : 'text-white'
                   }`}>
                     {event.title}
                   </p>
-                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-2 text-xs text-zinc-500">
                     <span>{t(`eventTypes.${event.event_type}`)}</span>
                     <span>&middot;</span>
                     <span>{formatEventDate(event.start_datetime, event.is_all_day, lang)}</span>
                   </div>
                 </div>
                 {event.status === 'cancelled' && (
-                  <span className="flex-shrink-0 text-[10px] font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded">
+                  <span className="flex-shrink-0 rounded-full border border-red-400/20 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-red-300">
                     {t('eventStatus.cancelled')}
                   </span>
                 )}
               </button>
-              {/* Remove button */}
               <button
                 onClick={() => onRemove(event.id)}
                 disabled={removing}
-                className="flex-shrink-0 text-gray-400 hover:text-red-500 dark:hover:text-red-400 p-1 transition-colors disabled:opacity-50"
+                className="flex-shrink-0 p-1 text-zinc-500 transition-colors hover:text-red-400 disabled:opacity-50"
                 title={t('myCalendar.removeFromCalendar')}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
+                <Trash2 className="h-4 w-4" />
               </button>
             </div>
           );
@@ -454,51 +387,44 @@ function DayDetailPanel({
   );
 }
 
-// ── Upcoming list below the calendar ────────────────────────────────────
-
 function UpcomingList({
   events,
   onRemove,
   removing,
+  onOpenDetail,
 }: {
   events: Event[];
   onRemove: (eventId: string) => void;
   removing: boolean;
+  onOpenDetail: (eventId: string) => void;
 }) {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
   const lang = i18n.language;
 
-  // Split into upcoming and past
   const upcoming = events.filter((e) => !isPast(parseISO(e.start_datetime)));
   const past = events.filter((e) => isPast(parseISO(e.start_datetime)));
 
   const renderEvent = (event: Event) => {
     const config = EVENT_TYPE_CONFIG[event.event_type] ?? EVENT_TYPE_CONFIG.other;
     return (
-      <div
-        key={event.id}
-        className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-      >
+      <div key={event.id} className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-white/5">
         <button
-          onClick={() => navigate(`/events/${event.id}`)}
-          className="flex items-center gap-4 flex-1 min-w-0 text-left"
+          onClick={() => onOpenDetail(event.id)}
+          className="flex flex-1 min-w-0 items-center gap-4 text-left"
         >
           <div
-            className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-base"
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-base"
             style={{ backgroundColor: config.bg + '20' }}
           >
             {config.emoji}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className={`text-sm font-medium truncate ${
-              event.status === 'cancelled'
-                ? 'text-gray-400 dark:text-gray-500 line-through'
-                : 'text-gray-800 dark:text-gray-100'
+          <div className="min-w-0 flex-1">
+            <p className={`truncate text-sm font-medium ${
+              event.status === 'cancelled' ? 'text-zinc-500 line-through' : 'text-white'
             }`}>
               {event.title}
             </p>
-            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-2 text-xs text-zinc-500">
               <span>{t(`eventTypes.${event.event_type}`)}</span>
               <span>&middot;</span>
               <span>{formatEventDate(event.start_datetime, event.is_all_day, lang)}</span>
@@ -511,7 +437,7 @@ function UpcomingList({
             </div>
           </div>
           {event.status === 'cancelled' && (
-            <span className="flex-shrink-0 text-[10px] font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded">
+            <span className="flex-shrink-0 rounded-full border border-red-400/20 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-red-300">
               {t('eventStatus.cancelled')}
             </span>
           )}
@@ -519,12 +445,10 @@ function UpcomingList({
         <button
           onClick={() => onRemove(event.id)}
           disabled={removing}
-          className="flex-shrink-0 text-gray-400 hover:text-red-500 dark:hover:text-red-400 p-1.5 transition-colors disabled:opacity-50"
+          className="flex-shrink-0 p-1.5 text-zinc-500 transition-colors hover:text-red-400 disabled:opacity-50"
           title={t('myCalendar.removeFromCalendar')}
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
+          <Trash2 className="h-4 w-4" />
         </button>
       </div>
     );
@@ -532,44 +456,36 @@ function UpcomingList({
 
   return (
     <div className="space-y-6">
-      {/* Upcoming */}
       {upcoming.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/80 border-b border-gray-100 dark:border-gray-700">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <div className="overflow-hidden rounded-3xl border border-white/10 bg-zinc-900">
+          <div className="border-b border-white/10 px-4 py-3">
+            <h3 className="text-sm font-semibold text-zinc-300">
               {t('myCalendar.upcoming', { count: upcoming.length })}
             </h3>
           </div>
-          <div className="divide-y divide-gray-100 dark:divide-gray-700">
-            {upcoming.map(renderEvent)}
-          </div>
+          <div className="divide-y divide-white/5">{upcoming.map(renderEvent)}</div>
         </div>
       )}
 
-      {/* Past */}
       {past.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/80 border-b border-gray-100 dark:border-gray-700">
-            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+        <div className="overflow-hidden rounded-3xl border border-white/10 bg-zinc-900 opacity-60">
+          <div className="border-b border-white/10 px-4 py-3">
+            <h3 className="text-sm font-semibold text-zinc-500">
               {t('myCalendar.past', { count: past.length })}
             </h3>
           </div>
-          <div className="divide-y divide-gray-100 dark:divide-gray-700 opacity-60">
-            {past.map(renderEvent)}
-          </div>
+          <div className="divide-y divide-white/5">{past.map(renderEvent)}</div>
         </div>
       )}
 
       {upcoming.length === 0 && past.length === 0 && (
-        <div className="text-center py-16 text-gray-500 dark:text-gray-400">
-          <svg className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <p className="text-lg font-medium mb-1">{t('myCalendar.emptyCalendar')}</p>
-          <p className="text-sm mb-4">{t('myCalendar.emptyCalendarDesc')}</p>
+        <div className="py-16 text-center text-zinc-400">
+          <Calendar className="mx-auto mb-4 h-16 w-16 text-zinc-600" />
+          <p className="mb-1 text-lg font-medium">{t('myCalendar.emptyCalendar')}</p>
+          <p className="mb-4 text-sm">{t('myCalendar.emptyCalendarDesc')}</p>
           <Link
             to="/events"
-            className="inline-block bg-primary-600 hover:bg-primary-700 text-white text-sm px-4 py-2 rounded-md transition-colors"
+            className="inline-block rounded-2xl bg-white px-4 py-2.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200"
           >
             {t('myCalendar.browseEvents')}
           </Link>
@@ -587,6 +503,8 @@ export default function MyCalendarPage() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const dateFnsLocale = DATE_LOCALES[lang] ?? enUS;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const detailId = searchParams.get('detail');
 
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -594,14 +512,12 @@ export default function MyCalendarPage() {
 
   const unsaveEvent = useUnsaveEvent();
 
-  // Calendar view range
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
-  // Fetch calendar data (generous limit for calendar grid)
   const { data: calendarData, isLoading: calendarLoading } = useMyCalendar(
     {
       date_from: calendarStart.toISOString(),
@@ -611,26 +527,22 @@ export default function MyCalendarPage() {
     viewMode === 'calendar',
   );
 
-  // Fetch all saved events for list view (no date filter, reasonable limit)
   const { data: listData, isLoading: listLoading } = useMyCalendar(
     { limit: 100 },
     viewMode === 'list',
   );
 
-  // Calendar events
   const calendarEvents = useMemo(
     () => (calendarData ? extractEvents(calendarData.items) : []),
     [calendarData],
   );
   const eventsByDay = useMemo(() => groupByDay(calendarEvents), [calendarEvents]);
 
-  // List events
   const listEvents = useMemo(
     () => (listData ? extractEvents(listData.items) : []),
     [listData],
   );
 
-  // Selected day detail
   const selectedDayKey = selectedDay ? format(selectedDay, 'yyyy-MM-dd') : null;
   const selectedDayEvents = selectedDayKey ? eventsByDay.get(selectedDayKey) ?? [] : [];
 
@@ -646,169 +558,197 @@ export default function MyCalendarPage() {
     unsaveEvent.mutate(eventId);
   };
 
+  const openDetail = (eventId: string) => {
+    setSearchParams({ detail: eventId });
+  };
+
+  const closeDetail = () => {
+    setSearchParams({});
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('myCalendar.title')}</h1>
-
-        {/* View toggle */}
-        <div className="flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden self-start">
-          <button
-            onClick={() => setViewMode('calendar')}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${
-              viewMode === 'calendar'
-                ? 'bg-primary-600 text-white'
-                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
-            }`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span className="hidden sm:inline">{t('myCalendar.calendar')}</span>
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors border-l border-gray-300 dark:border-gray-600 ${
-              viewMode === 'list'
-                ? 'bg-primary-600 text-white'
-                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
-            }`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-            </svg>
-            <span className="hidden sm:inline">{t('myCalendar.list')}</span>
-          </button>
-        </div>
-      </div>
+      {/* Hero */}
+      <PageHero
+        eyebrow={t('myCalendar.eyebrow', { defaultValue: 'Your saved plans' })}
+        title={t('myCalendar.heroTitle', { defaultValue: 'Track your subscribed events.' })}
+        description={t('myCalendar.heroDescription', {
+          defaultValue:
+            'Keep your saved events organized in a personal calendar and revisit them whenever you need.',
+        })}
+        accent="violet"
+      />
 
       {/* Calendar subscription */}
       <CalendarSubscription />
 
-      {/* ── Calendar view ── */}
-      {viewMode === 'calendar' && (
-        <div className="space-y-4">
-          {/* Month nav */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-                {format(currentMonth, 'MMMM yyyy', { locale: dateFnsLocale })}
-              </h2>
-              {!isSameMonth(currentMonth, new Date()) && (
-                <button
-                  onClick={() => { setCurrentMonth(new Date()); setSelectedDay(null); }}
-                  className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 font-medium px-2 py-0.5 rounded border border-primary-200 dark:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
-                >
-                  {t('myCalendar.today')}
-                </button>
-              )}
+      {/* View toggle + header */}
+      <div className="rounded-[32px] border border-white/10 bg-zinc-900 p-5 shadow-xl">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">{t('myCalendar.title')}</h3>
+            <p className="text-sm text-zinc-400">
+              {t('myCalendar.pageDesc', {
+                defaultValue: 'A personal calendar populated from your saved events.',
+              })}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-zinc-900">
+              {calendarEvents.length || listEvents.length} {t('myCalendar.savedLabel', { defaultValue: 'saved' })}
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex overflow-hidden rounded-2xl border border-white/10">
               <button
-                onClick={() => { setCurrentMonth(subMonths(currentMonth, 1)); setSelectedDay(null); }}
-                className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors"
-                aria-label={t('myCalendar.previousMonth')}
+                onClick={() => setViewMode('calendar')}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${
+                  viewMode === 'calendar'
+                    ? 'bg-white text-zinc-900'
+                    : 'bg-white/5 text-zinc-300 hover:bg-white/10'
+                }`}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
+                <Calendar className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('myCalendar.calendar')}</span>
               </button>
               <button
-                onClick={() => { setCurrentMonth(addMonths(currentMonth, 1)); setSelectedDay(null); }}
-                className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors"
-                aria-label={t('myCalendar.nextMonth')}
+                onClick={() => setViewMode('list')}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors border-l border-white/10 ${
+                  viewMode === 'list'
+                    ? 'bg-white text-zinc-900'
+                    : 'bg-white/5 text-zinc-300 hover:bg-white/10'
+                }`}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                <List className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('myCalendar.list')}</span>
               </button>
             </div>
           </div>
+        </div>
 
-          {/* Grid */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-            <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80">
-              {WEEKDAY_KEYS.map((key) => (
-                <div key={key} className="text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide py-2">
-                  {t(key)}
+        {/* Calendar view */}
+        {viewMode === 'calendar' && (
+          <div className="space-y-4">
+            {/* Month nav */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-semibold">
+                  {format(currentMonth, 'MMMM yyyy', { locale: dateFnsLocale })}
+                </h2>
+                {!isSameMonth(currentMonth, new Date()) && (
+                  <button
+                    onClick={() => { setCurrentMonth(new Date()); setSelectedDay(null); }}
+                    className="rounded-full border border-red-400/30 bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-200 transition-colors hover:bg-red-500/20"
+                  >
+                    {t('myCalendar.today')}
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => { setCurrentMonth(subMonths(currentMonth, 1)); setSelectedDay(null); }}
+                  className="rounded-full border border-white/10 p-1.5 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white"
+                  aria-label={t('myCalendar.previousMonth')}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => { setCurrentMonth(addMonths(currentMonth, 1)); setSelectedDay(null); }}
+                  className="rounded-full border border-white/10 p-1.5 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white"
+                  aria-label={t('myCalendar.nextMonth')}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Grid */}
+            <div className="overflow-hidden rounded-3xl border border-white/10">
+              <div className="grid grid-cols-7 border-b border-white/10 bg-white/5">
+                {WEEKDAY_KEYS.map((key) => (
+                  <div key={key} className="py-2 text-center text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    {t(key)}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-px bg-white/5">
+                {days.map((day) => {
+                  const key = format(day, 'yyyy-MM-dd');
+                  const dayEvents = eventsByDay.get(key) ?? [];
+                  return (
+                    <div key={key} className="bg-zinc-900">
+                      <DayCell
+                        day={day}
+                        currentMonth={currentMonth}
+                        events={dayEvents}
+                        isSelected={!!selectedDay && isSameDay(day, selectedDay)}
+                        onSelect={handleDaySelect}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+              {calendarLoading && (
+                <div className="flex justify-center border-t border-white/10 py-4">
+                  <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-white" />
+                </div>
+              )}
+            </div>
+
+            {/* Legend */}
+            <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500">
+              {Object.entries(EVENT_TYPE_CONFIG).map(([type, config]) => (
+                <div key={type} className="flex items-center gap-1">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: config.bg }} />
+                  <span>{t(`eventTypes.${type}`)}</span>
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-7 gap-px bg-gray-100 dark:bg-gray-700">
-              {days.map((day) => {
-                const key = format(day, 'yyyy-MM-dd');
-                const dayEvents = eventsByDay.get(key) ?? [];
-                return (
-                  <div key={key} className="bg-white dark:bg-gray-800">
-                    <DayCell
-                      day={day}
-                      currentMonth={currentMonth}
-                      events={dayEvents}
-                      isSelected={!!selectedDay && isSameDay(day, selectedDay)}
-                      onSelect={handleDaySelect}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-            {calendarLoading && (
-              <div className="flex justify-center py-4 border-t border-gray-100 dark:border-gray-700">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600" />
+
+            {/* Day detail */}
+            {selectedDay && selectedDayEvents.length > 0 && (
+              <DayDetailPanel
+                day={selectedDay}
+                events={selectedDayEvents}
+                onClose={() => setSelectedDay(null)}
+                onRemove={handleRemove}
+                removing={unsaveEvent.isPending}
+                onOpenDetail={openDetail}
+              />
+            )}
+
+            {/* Empty state */}
+            {!calendarLoading && calendarEvents.length === 0 && (
+              <div className="py-10 text-center text-zinc-400">
+                <p className="text-sm">{t('myCalendar.noSavedEventsThisMonth')}</p>
+                <Link to="/events" className="mt-1 inline-block text-sm text-red-300 hover:underline">
+                  {t('myCalendar.browseEventsToAdd')}
+                </Link>
               </div>
             )}
           </div>
+        )}
 
-          {/* Legend */}
-          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-            {Object.entries(EVENT_TYPE_CONFIG).map(([type, config]) => (
-              <div key={type} className="flex items-center gap-1">
-                <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: config.bg }} />
-                <span>{t(`eventTypes.${type}`)}</span>
+        {/* List view */}
+        {viewMode === 'list' && (
+          <>
+            {listLoading && (
+              <div className="flex justify-center py-20">
+                <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-white" />
               </div>
-            ))}
-          </div>
+            )}
+            {!listLoading && (
+              <UpcomingList
+                events={listEvents}
+                onRemove={handleRemove}
+                removing={unsaveEvent.isPending}
+                onOpenDetail={openDetail}
+              />
+            )}
+          </>
+        )}
+      </div>
 
-          {/* Day detail panel */}
-          {selectedDay && selectedDayEvents.length > 0 && (
-            <DayDetailPanel
-              day={selectedDay}
-              events={selectedDayEvents}
-              onClose={() => setSelectedDay(null)}
-              onRemove={handleRemove}
-              removing={unsaveEvent.isPending}
-            />
-          )}
-
-          {/* Empty state for calendar */}
-          {!calendarLoading && calendarEvents.length === 0 && (
-            <div className="text-center py-10 text-gray-500 dark:text-gray-400">
-              <p className="text-sm">{t('myCalendar.noSavedEventsThisMonth')}</p>
-              <Link to="/events" className="text-primary-600 dark:text-primary-400 hover:underline text-sm mt-1 inline-block">
-                {t('myCalendar.browseEventsToAdd')}
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── List view ── */}
-      {viewMode === 'list' && (
-        <>
-          {listLoading && (
-            <div className="flex justify-center py-20">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600" />
-            </div>
-          )}
-          {!listLoading && (
-            <UpcomingList
-              events={listEvents}
-              onRemove={handleRemove}
-              removing={unsaveEvent.isPending}
-            />
-          )}
-        </>
-      )}
+      {/* Detail modal */}
+      {detailId && <EventDetailModal eventId={detailId} onClose={closeDetail} />}
     </div>
   );
 }

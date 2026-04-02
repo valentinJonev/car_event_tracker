@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Bell, BellOff } from 'lucide-react';
 import {
   useNotifications,
   useUnreadCount,
@@ -55,8 +56,8 @@ function NotificationItem({
   return (
     <button
       onClick={() => onNavigate(notification.event_id, notification.id)}
-      className={`w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
-        isUnread ? 'bg-primary-50/50 dark:bg-primary-900/10' : ''
+      className={`w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-b-0 ${
+        isUnread ? 'bg-red-500/5' : ''
       }`}
     >
       {/* Event type emoji icon */}
@@ -73,8 +74,8 @@ function NotificationItem({
         <p
           className={`text-sm leading-snug truncate ${
             isUnread
-              ? 'font-semibold text-gray-900 dark:text-gray-100'
-              : 'text-gray-700 dark:text-gray-300'
+              ? 'font-semibold text-white'
+              : 'text-zinc-400'
           }`}
         >
           {title}
@@ -83,11 +84,11 @@ function NotificationItem({
         {/* Event date & time ago */}
         <div className="flex items-center gap-2 mt-0.5">
           {eventDate && (
-            <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+            <span className="text-xs text-zinc-500 truncate">
               {eventDate}
             </span>
           )}
-          <span className="text-xs text-gray-400 dark:text-gray-500">
+          <span className="text-xs text-zinc-600">
             · {formatTimeAgo(notification.created_at, t)}
           </span>
         </div>
@@ -96,7 +97,7 @@ function NotificationItem({
       {/* Unread dot */}
       {isUnread && (
         <div className="flex-shrink-0 mt-2">
-          <span className="block w-2 h-2 rounded-full bg-primary-500" />
+          <span className="block w-2 h-2 rounded-full bg-red-500" />
         </div>
       )}
     </button>
@@ -142,13 +143,13 @@ export default function NotificationBell() {
   }, [isOpen]);
 
   function handleNavigate(eventId: string, notificationId: string) {
-    // Mark notification as read, then navigate
+    // Mark notification as read, then navigate to events page with detail modal
     const notification = notifications.find((n) => n.id === notificationId);
     if (notification && notification.status !== 'read') {
       markRead.mutate(notificationId);
     }
     setIsOpen(false);
-    navigate(`/events/${eventId}`);
+    navigate(`/events?detail=${eventId}`);
   }
 
   function handleMarkAllRead() {
@@ -160,26 +161,13 @@ export default function NotificationBell() {
       {/* Bell button */}
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="text-gray-300 hover:text-white relative p-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-400"
+        className="text-zinc-400 hover:text-white relative p-2 rounded-full transition-colors focus:outline-none"
         aria-label={t('notifications.title')}
         aria-expanded={isOpen}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-          />
-        </svg>
+        <Bell className="h-5 w-5" />
         {hasUnread && (
-          <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full h-4.5 w-4.5 flex items-center justify-center min-w-[18px] px-1">
             {(unreadCount ?? 0) > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -187,17 +175,17 @@ export default function NotificationBell() {
 
       {/* Dropdown panel */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 max-h-[28rem] bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2">
+        <div className="absolute right-0 mt-2 w-96 max-h-[28rem] bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden backdrop-blur-xl">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+            <h3 className="text-sm font-semibold text-white">
               {t('notifications.title')}
             </h3>
             {hasUnread && (
               <button
                 onClick={handleMarkAllRead}
                 disabled={markAllRead.isPending}
-                className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 font-medium disabled:opacity-50"
+                className="text-xs text-red-400 hover:text-red-300 font-medium disabled:opacity-50 transition-colors"
               >
                 {t('notifications.markAllAsRead')}
               </button>
@@ -208,30 +196,17 @@ export default function NotificationBell() {
           <div className="flex-1 overflow-y-auto">
             {isLoading && (
               <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600" />
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white/40" />
               </div>
             )}
 
             {!isLoading && notifications.length === 0 && (
               <div className="flex flex-col items-center justify-center py-10 px-4">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-10 w-10 text-gray-300 dark:text-gray-600 mb-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                  />
-                </svg>
-                <p className="text-sm text-gray-400 dark:text-gray-500">
+                <BellOff className="h-10 w-10 text-zinc-600 mb-2" />
+                <p className="text-sm text-zinc-500">
                   {t('notifications.noNotificationsYet')}
                 </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                <p className="text-xs text-zinc-600 mt-1">
                   {t('notifications.subscribeToGetNotified')}
                 </p>
               </div>
@@ -251,8 +226,8 @@ export default function NotificationBell() {
 
           {/* Footer with count */}
           {!isLoading && notifications.length > 0 && (
-            <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 text-center">
-              <span className="text-xs text-gray-400 dark:text-gray-500">
+            <div className="px-4 py-2 border-t border-white/10 text-center">
+              <span className="text-xs text-zinc-500">
                 {t('notifications.showingLatest', { count: notifications.length })}
                 {notificationsData && notificationsData.total > notifications.length && (
                   <> {t('notifications.ofTotal', { total: notificationsData.total })}</>

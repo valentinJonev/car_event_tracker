@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import {
   startOfMonth,
   endOfMonth,
@@ -20,7 +20,7 @@ import type { Locale } from 'date-fns';
 import { useEvents } from '../hooks/useEvents';
 import { EVENT_TYPE_CONFIG } from '../constants/eventTypes';
 import { formatEventDate } from '../utils/dateFormat';
-import type { Event, EventType } from '../types';
+import type { Event, EventType, EventStatus } from '../types';
 
 const DATE_LOCALES: Record<string, Locale> = { en: enUS, bg };
 
@@ -104,17 +104,17 @@ function DayCell({
       onClick={() => hasEvents && onSelect(day)}
       className={`
         relative flex flex-col items-stretch p-1 min-h-[5.5rem] sm:min-h-[7rem] rounded-lg transition-colors text-sm w-full text-left
-        ${!inMonth ? 'text-gray-300 dark:text-gray-600' : 'text-gray-700 dark:text-gray-200'}
-        ${today ? 'ring-2 ring-primary-500 ring-inset' : ''}
-        ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30' : ''}
-        ${hasEvents && inMonth ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50' : 'cursor-default'}
+        ${!inMonth ? 'text-zinc-700' : 'text-zinc-200'}
+        ${today ? 'ring-2 ring-red-500/50 ring-inset' : ''}
+        ${isSelected ? 'bg-white/10' : ''}
+        ${hasEvents && inMonth ? 'cursor-pointer hover:bg-white/5' : 'cursor-default'}
       `}
     >
       {/* Day number */}
       <span
         className={`
           text-xs sm:text-sm font-medium leading-none mb-1 self-start
-          ${today ? 'bg-primary-600 text-white w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full' : ''}
+          ${today ? 'bg-red-500 text-white w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full' : ''}
         `}
       >
         {format(day, 'd')}
@@ -127,7 +127,7 @@ function DayCell({
             <EventChip key={e.id} event={e} />
           ))}
           {overflow > 0 && (
-            <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium pl-1.5">
+            <span className="text-[10px] text-zinc-500 font-medium pl-1.5">
               {t('common.moreCount', { count: overflow })}
             </span>
           )}
@@ -142,6 +142,7 @@ function DayDetailPanel({
   day,
   events,
   onClose,
+  onEventClick,
   t,
   dateFnsLocale,
   lang,
@@ -149,42 +150,39 @@ function DayDetailPanel({
   day: Date;
   events: Event[];
   onClose: () => void;
+  onEventClick?: (event: Event) => void;
   t: (key: string, opts?: Record<string, unknown>) => string;
   dateFnsLocale: Locale;
   lang: string;
 }) {
-  const navigate = useNavigate();
-
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-2">
+    <div className="bg-zinc-900 rounded-2xl border border-white/10 shadow-xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
+        <h3 className="text-sm font-semibold text-white">
           {format(day, 'EEEE, MMMM d, yyyy', { locale: dateFnsLocale })}
-          <span className="ml-2 text-xs font-normal text-gray-400 dark:text-gray-500">
+          <span className="ml-2 text-xs font-normal text-zinc-500">
             {t('common.events_count', { count: events.length })}
           </span>
         </h3>
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+          className="text-zinc-500 hover:text-zinc-300 p-1 transition-colors"
           aria-label={t('common.close')}
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Event list */}
-      <div className="divide-y divide-gray-100 dark:divide-gray-700 max-h-64 overflow-y-auto">
+      <div className="divide-y divide-white/5 max-h-64 overflow-y-auto">
         {events.map((event) => {
           const config = EVENT_TYPE_CONFIG[event.event_type] ?? EVENT_TYPE_CONFIG.other;
           return (
             <button
               key={event.id}
-              onClick={() => navigate(`/events/${event.id}`)}
-              className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              onClick={() => onEventClick?.(event)}
+              className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-white/5 transition-colors"
             >
               {/* Event type indicator */}
               <div
@@ -198,12 +196,12 @@ function DayDetailPanel({
               <div className="flex-1 min-w-0">
                 <p className={`text-sm font-medium truncate ${
                   event.status === 'cancelled'
-                    ? 'text-gray-400 dark:text-gray-500 line-through'
-                    : 'text-gray-800 dark:text-gray-100'
+                    ? 'text-zinc-600 line-through'
+                    : 'text-white'
                 }`}>
                   {event.title}
                 </p>
-                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-2 text-xs text-zinc-500">
                   <span>{t(`eventTypes.${event.event_type}`)}</span>
                   <span>&middot;</span>
                   <span>{formatEventDate(event.start_datetime, event.is_all_day, lang)}</span>
@@ -218,15 +216,13 @@ function DayDetailPanel({
 
               {/* Cancelled badge */}
               {event.status === 'cancelled' && (
-                <span className="flex-shrink-0 text-[10px] font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded">
+                <span className="flex-shrink-0 text-[10px] font-semibold text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">
                   {t('eventStatus.cancelled')}
                 </span>
               )}
 
               {/* Chevron */}
-              <svg className="flex-shrink-0 w-4 h-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              <ChevronRight className="flex-shrink-0 w-4 h-4 text-zinc-600" />
             </button>
           );
         })}
@@ -242,11 +238,17 @@ interface EventCalendarProps {
   eventTypeFilter?: EventType;
   /** Optional search filter. */
   searchFilter?: string;
+  /** Optional status filter. */
+  statusFilter?: EventStatus;
+  /** Optional callback when an event is clicked (e.g. to open detail modal). */
+  onEventClick?: (event: Event) => void;
 }
 
 export default function EventCalendar({
   eventTypeFilter,
   searchFilter,
+  statusFilter,
+  onEventClick,
 }: EventCalendarProps) {
   const { t, i18n } = useTranslation();
   const dateFnsLocale = DATE_LOCALES[i18n.language] ?? enUS;
@@ -266,6 +268,7 @@ export default function EventCalendar({
     date_from: calendarStart.toISOString(),
     date_to: calendarEnd.toISOString(),
     event_type: eventTypeFilter || undefined,
+    status: statusFilter || undefined,
     search: searchFilter || undefined,
     offset: 0,
     limit: 200, // calendars need all events for the month
@@ -308,13 +311,13 @@ export default function EventCalendar({
       {/* Month navigation */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+          <h2 className="text-lg font-semibold text-white">
             {format(currentMonth, 'MMMM yyyy', { locale: dateFnsLocale })}
           </h2>
           {!isSameMonth(currentMonth, new Date()) && (
             <button
               onClick={handleToday}
-              className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 font-medium px-2 py-0.5 rounded border border-primary-200 dark:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
+              className="text-xs text-zinc-400 hover:text-white font-medium px-2.5 py-1 rounded-full border border-white/10 hover:bg-white/5 transition-colors"
             >
               {t('myCalendar.today')}
             </button>
@@ -324,33 +327,29 @@ export default function EventCalendar({
         <div className="flex items-center gap-1">
           <button
             onClick={handlePrevMonth}
-            className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors"
+            className="p-1.5 rounded-full hover:bg-white/5 text-zinc-400 hover:text-white transition-colors"
             aria-label={t('myCalendar.previousMonth')}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={handleNextMonth}
-            className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors"
+            className="p-1.5 rounded-full hover:bg-white/5 text-zinc-400 hover:text-white transition-colors"
             aria-label={t('myCalendar.nextMonth')}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight className="w-5 h-5" />
           </button>
         </div>
       </div>
 
       {/* Calendar grid */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+      <div className="bg-zinc-900 rounded-2xl border border-white/10 shadow-xl overflow-hidden">
         {/* Weekday headers */}
-        <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80">
+        <div className="grid grid-cols-7 border-b border-white/10 bg-white/5">
           {WEEKDAY_KEYS.map((key) => (
             <div
               key={key}
-              className="text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide py-2"
+              className="text-center text-xs font-semibold text-zinc-500 uppercase tracking-wide py-2"
             >
               {t(key)}
             </div>
@@ -358,12 +357,12 @@ export default function EventCalendar({
         </div>
 
         {/* Day cells */}
-        <div className="grid grid-cols-7 gap-px bg-gray-100 dark:bg-gray-700">
+        <div className="grid grid-cols-7 gap-px bg-white/5">
           {days.map((day) => {
             const key = format(day, 'yyyy-MM-dd');
             const dayEvents = eventsByDay.get(key) ?? [];
             return (
-              <div key={key} className="bg-white dark:bg-gray-800">
+              <div key={key} className="bg-zinc-900">
                 <DayCell
                   day={day}
                   currentMonth={currentMonth}
@@ -379,14 +378,14 @@ export default function EventCalendar({
 
         {/* Loading overlay */}
         {isLoading && (
-          <div className="flex justify-center py-4 border-t border-gray-100 dark:border-gray-700">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600" />
+          <div className="flex justify-center py-4 border-t border-white/10">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white/40" />
           </div>
         )}
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+      <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500">
         {Object.entries(EVENT_TYPE_CONFIG).map(([type, config]) => (
           <div key={type} className="flex items-center gap-1">
             <span
@@ -404,6 +403,7 @@ export default function EventCalendar({
           day={selectedDay}
           events={selectedDayEvents}
           onClose={() => setSelectedDay(null)}
+          onEventClick={onEventClick}
           t={t}
           dateFnsLocale={dateFnsLocale}
           lang={i18n.language}

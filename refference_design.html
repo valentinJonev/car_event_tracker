@@ -1,0 +1,858 @@
+import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Calendar,
+  MapPin,
+  Search,
+  Users,
+  Share2,
+  Plus,
+  SlidersHorizontal,
+  X,
+  User,
+  Gauge,
+  Coffee,
+  Trophy,
+  RotateCw,
+  Route,
+  Clock3,
+} from "lucide-react";
+
+type EventItem = {
+  id: number;
+  title: string;
+  type: string;
+  date: string;
+  time: string;
+  city: string;
+  location: string;
+  organizer: string;
+  attendees: number;
+  price: string;
+  details: string;
+  lat: number;
+  lng: number;
+};
+
+type View = "home" | "events" | "map" | "calendar";
+
+export default function CarEventsPlatformDesign() {
+  const initialEvents: EventItem[] = [
+    {
+      id: 1,
+      title: "Sofia Track Night",
+      type: "Track Day",
+      date: "2026-04-18",
+      time: "18:00",
+      city: "Sofia",
+      location: "Dragon Romanov",
+      organizer: "Apex Motors Club",
+      attendees: 148,
+      price: "€25",
+      details:
+        "Evening open-lane session with beginner and advanced groups, paddock parking, marshal briefing, and timing add-on.",
+      lat: 42.6977,
+      lng: 23.3219,
+    },
+    {
+      id: 2,
+      title: "Plovdiv Cars & Coffee",
+      type: "Meetup",
+      date: "2026-04-20",
+      time: "09:00",
+      city: "Plovdiv",
+      location: "Kapana District",
+      organizer: "Cars & Coffee BG",
+      attendees: 320,
+      price: "Free",
+      details:
+        "Morning community meetup with static display parking, sponsor coffee stand, photo corner, and casual social hangout.",
+      lat: 42.1354,
+      lng: 24.7453,
+    },
+    {
+      id: 3,
+      title: "Time Attack Open",
+      type: "Competition",
+      date: "2026-04-27",
+      time: "10:30",
+      city: "Serres",
+      location: "Serres Circuit",
+      organizer: "Time Attack Balkans",
+      attendees: 92,
+      price: "€60",
+      details:
+        "Timed sessions, class-based results, safety inspection, transponder registration, and spectator access areas.",
+      lat: 41.0856,
+      lng: 23.5497,
+    },
+    {
+      id: 4,
+      title: "Night Drift Session",
+      type: "Drift",
+      date: "2026-05-03",
+      time: "20:00",
+      city: "Burgas",
+      location: "Industrial Zone Track",
+      organizer: "Sideways Society",
+      attendees: 211,
+      price: "€15",
+      details:
+        "Open drift practice under lights with pit access, tire vendor support, and dedicated passenger ride sessions.",
+      lat: 42.5048,
+      lng: 27.4626,
+    },
+    {
+      id: 5,
+      title: "Varna Seaside Rally Meet",
+      type: "Meetup",
+      date: "2026-05-09",
+      time: "11:00",
+      city: "Varna",
+      location: "Sea Garden Parking",
+      organizer: "Black Sea Motors",
+      attendees: 180,
+      price: "Free",
+      details:
+        "Road car and rally-themed gathering with local vendors, convoy start, and best build community voting.",
+      lat: 43.2141,
+      lng: 27.9147,
+    },
+    {
+      id: 6,
+      title: "Mountain Touge Run",
+      type: "Drive",
+      date: "2026-05-16",
+      time: "07:30",
+      city: "Rila",
+      location: "Rila Base Point",
+      organizer: "Roadbook Collective",
+      attendees: 67,
+      price: "€10",
+      details:
+        "Curated morning drive with route checkpoints, breakfast stop, convoy rules, and scenic photography pull-offs.",
+      lat: 42.1333,
+      lng: 23.5667,
+    },
+  ];
+
+  const eventTypes = ["All", "Track Day", "Meetup", "Competition", "Drift", "Drive"];
+  const locations = ["Any", "Sofia", "Plovdiv", "Serres", "Burgas", "Varna", "Rila"];
+  const datePresets = ["Any", "This Month", "Next 30 Days"];
+
+  const [view, setView] = useState<View>("home");
+  const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("All");
+  const [locationFilter, setLocationFilter] = useState("Any");
+  const [organizerFilter, setOrganizerFilter] = useState("Any");
+  const [dateFilter, setDateFilter] = useState("Any");
+  const [savedEventIds, setSavedEventIds] = useState<number[]>([1, 3]);
+  const [selectedEventId, setSelectedEventId] = useState(3);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+
+  const organizers = ["Any", ...Array.from(new Set(initialEvents.map((e) => e.organizer)))];
+
+  const filteredEvents = useMemo(() => {
+    return initialEvents.filter((event) => {
+      const searchable = `${event.title} ${event.type} ${event.city} ${event.location} ${event.organizer}`.toLowerCase();
+      const matchesQuery = query.trim() === "" || searchable.includes(query.toLowerCase());
+      const matchesType = typeFilter === "All" || event.type === typeFilter;
+      const matchesLocation = locationFilter === "Any" || event.city === locationFilter;
+      const matchesOrganizer = organizerFilter === "Any" || event.organizer === organizerFilter;
+      const eventDate = new Date(`${event.date}T00:00:00`);
+      const start = new Date("2026-04-01T00:00:00");
+      const next30 = new Date("2026-05-01T23:59:59");
+      const matchesDate =
+        dateFilter === "Any" ||
+        (dateFilter === "This Month" && eventDate.getMonth() === 3) ||
+        (dateFilter === "Next 30 Days" && eventDate >= start && eventDate <= next30);
+
+      return matchesQuery && matchesType && matchesLocation && matchesOrganizer && matchesDate;
+    });
+  }, [query, typeFilter, locationFilter, organizerFilter, dateFilter, initialEvents]);
+
+  const selectedEvent =
+    filteredEvents.find((e) => e.id === selectedEventId) ||
+    initialEvents.find((e) => e.id === selectedEventId) ||
+    filteredEvents[0] ||
+    initialEvents[0];
+
+  const savedEvents = initialEvents.filter((e) => savedEventIds.includes(e.id));
+  const savedDays = savedEvents.map((e) => new Date(`${e.date}T00:00:00`).getDate());
+  const monthDays = Array.from({ length: 35 }, (_, idx) => idx - 1);
+  const mostSubscribedEvent = [...initialEvents].sort((a, b) => b.attendees - a.attendees)[0];
+  const mostRecentEvents = [...initialEvents]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 3);
+
+  const stats = [
+    { label: "All events", value: initialEvents.length },
+    { label: "Gearheads", value: 12840 },
+    { label: "Organizers", value: new Set(initialEvents.map((e) => e.organizer)).size },
+  ];
+
+  const pageMeta: Record<View, { eyebrow: string; title: string; description: string }> = {
+    home: {
+      eyebrow: "Discover, map, and save car events",
+      title: "A social event platform for track days, meetups, drifting, and road runs.",
+      description:
+        "Browse what is trending, catch the newest events, and jump into event details from a curated home overview.",
+    },
+    events: {
+      eyebrow: "Search the full event catalog",
+      title: "All events in one place.",
+      description: "Filter by type, city, organizer, and date to find the exact event you want.",
+    },
+    map: {
+      eyebrow: "Explore events visually",
+      title: "Find events through the map.",
+      description:
+        "See event locations at a glance, inspect pins by event type, and move straight into event details.",
+    },
+    calendar: {
+      eyebrow: "Your saved plans",
+      title: "Track your subscribed events.",
+      description:
+        "Keep your saved events organized in a personal calendar and revisit them whenever you need.",
+    },
+  };
+
+  const toggleSaved = (id: number) => {
+    setSavedEventIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+  };
+
+  const selectEvent = (id: number, nextView?: View, openModal = false) => {
+    setSelectedEventId(id);
+    if (nextView) setView(nextView);
+    if (openModal) setIsEventModalOpen(true);
+  };
+
+  const formatDate = (date: string) =>
+    new Date(`${date}T00:00:00`).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+
+  const getGoogleMapsUrl = (event: EventItem) =>
+    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${event.location}, ${event.city}`)}`;
+
+  const getEventTypeIcon = (type: string) => {
+    switch (type) {
+      case "Track Day":
+        return Gauge;
+      case "Meetup":
+        return Coffee;
+      case "Competition":
+        return Trophy;
+      case "Drift":
+        return RotateCw;
+      case "Drive":
+        return Route;
+      default:
+        return MapPin;
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedEvent || savedEventIds.includes(selectedEvent.id)) return;
+    if (view === "calendar") {
+      setView("home");
+    }
+  }, [savedEventIds, selectedEvent, view]);
+
+  function FilterBar({ compact = false }: { compact?: boolean }) {
+    const filterControls = [
+      { value: typeFilter, onChange: setTypeFilter, options: eventTypes },
+      { value: locationFilter, onChange: setLocationFilter, options: locations },
+      { value: organizerFilter, onChange: setOrganizerFilter, options: organizers },
+      { value: dateFilter, onChange: setDateFilter, options: datePresets },
+    ];
+
+    return (
+      <div className={`grid gap-3 ${compact ? "grid-cols-1" : "md:grid-cols-2 xl:grid-cols-5"}`}>
+        <div className="relative xl:col-span-2">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search events, circuits, cities, organizers"
+            className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-sm text-white outline-none placeholder:text-zinc-500"
+          />
+        </div>
+
+        {filterControls.map((item, idx) => (
+          <select
+            key={idx}
+            value={item.value}
+            onChange={(e) => item.onChange(e.target.value)}
+            className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-white outline-none"
+          >
+            {item.options.map((option) => (
+              <option key={option} value={option} className="bg-zinc-900 text-white">
+                {option}
+              </option>
+            ))}
+          </select>
+        ))}
+      </div>
+    );
+  }
+
+  function EventCard({ event, interactive = true }: { event: EventItem; interactive?: boolean }) {
+    const saved = savedEventIds.includes(event.id);
+    const active = selectedEvent?.id === event.id;
+
+    return (
+      <motion.div
+        layout
+        whileHover={{ y: -2 }}
+        onClick={() => interactive && selectEvent(event.id, view === "calendar" ? "calendar" : undefined, true)}
+        className={`cursor-pointer rounded-3xl border p-4 transition ${
+          active ? "border-red-400/40 bg-red-500/10" : "border-white/10 bg-white/5 hover:bg-white/10"
+        }`}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">{event.type}</div>
+            <div className="mt-1 text-base font-semibold text-white">{event.title}</div>
+            <div className="mt-2 flex items-center gap-2 text-sm text-zinc-400">
+              <Calendar className="h-4 w-4" />
+              <span>
+                {formatDate(event.date)} • {event.time}
+              </span>
+            </div>
+            <div className="mt-1 flex items-center gap-2 text-sm text-zinc-400">
+              <MapPin className="h-4 w-4" />
+              <span>
+                {event.location}, {event.city}
+              </span>
+            </div>
+          </div>
+          <div className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-300">{event.price}</div>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between text-sm text-zinc-400">
+          <span>{event.organizer}</span>
+          <span className="flex items-center gap-1">
+            <Users className="h-4 w-4" />
+            {event.attendees}
+          </span>
+        </div>
+
+        <div className="mt-4 flex items-center gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSaved(event.id);
+            }}
+            className={`rounded-full px-3 py-2 text-xs font-medium transition ${
+              saved ? "bg-white text-zinc-900" : "border border-white/10 bg-white/5 text-zinc-200"
+            }`}
+          >
+            {saved ? "Saved" : "Save to calendar"}
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              selectEvent(event.id, undefined, true);
+            }}
+            className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-zinc-200"
+          >
+            View details
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  function PageHero({ viewKey }: { viewKey: View }) {
+    const meta = pageMeta[viewKey];
+    const accentClass =
+      viewKey === "home"
+        ? "border-red-400/20 bg-red-500/10 text-red-200"
+        : viewKey === "events"
+          ? "border-blue-400/20 bg-blue-500/10 text-blue-200"
+          : viewKey === "map"
+            ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-200"
+            : "border-violet-400/20 bg-violet-500/10 text-violet-200";
+
+    return (
+      <section className="overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-br from-zinc-900 to-zinc-950 shadow-2xl">
+        <div className="p-6 lg:p-8">
+          <div className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${accentClass}`}>{meta.eyebrow}</div>
+          <h2 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight sm:text-4xl">{meta.title}</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">{meta.description}</p>
+        </div>
+      </section>
+    );
+  }
+
+  function HomePage() {
+    return (
+      <>
+        <section className="overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-br from-zinc-900 to-zinc-950 shadow-2xl">
+          <div className="grid gap-6 p-6 lg:grid-cols-[1.15fr_0.85fr] lg:p-8">
+            <div className="space-y-5">
+              <div className="inline-flex rounded-full border border-red-400/20 bg-red-500/10 px-3 py-1 text-xs font-medium text-red-200">
+                {pageMeta.home.eyebrow}
+              </div>
+              <div>
+                <h2 className="max-w-3xl text-3xl font-semibold leading-tight sm:text-4xl">{pageMeta.home.title}</h2>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">{pageMeta.home.description}</p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                {stats.map((item) => (
+                  <div key={item.label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <div className="text-2xl font-semibold">{item.value}</div>
+                    <div className="mt-1 text-xs text-zinc-400">{item.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[28px] border border-white/10 bg-black/25 p-4">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium">Most subscribed event</div>
+                  <div className="text-xs text-zinc-500">Trending with the community</div>
+                </div>
+                <div
+                  className={`rounded-full px-3 py-1 text-xs ${
+                    savedEventIds.includes(mostSubscribedEvent.id) ? "bg-green-500/15 text-green-300" : "bg-white/10 text-zinc-300"
+                  }`}
+                >
+                  {mostSubscribedEvent.attendees} subscribed
+                </div>
+              </div>
+
+              <div className="space-y-4 rounded-3xl border border-white/10 bg-zinc-900/70 p-4">
+                <div>
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">{mostSubscribedEvent.type}</div>
+                  <div className="mt-1 text-xl font-semibold">{mostSubscribedEvent.title}</div>
+                  <div className="mt-2 text-sm text-zinc-400">
+                    {formatDate(mostSubscribedEvent.date)} • {mostSubscribedEvent.time} • {mostSubscribedEvent.location}, {mostSubscribedEvent.city}
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm text-zinc-300">
+                  <div>
+                    <span className="text-zinc-500">Organizer:</span> {mostSubscribedEvent.organizer}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => toggleSaved(mostSubscribedEvent.id)}
+                    className="rounded-2xl bg-white px-4 py-3 text-sm font-medium text-zinc-900"
+                  >
+                    {savedEventIds.includes(mostSubscribedEvent.id) ? "Remove from calendar" : "Save to calendar"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedEventId(mostSubscribedEvent.id);
+                      setIsEventModalOpen(true);
+                    }}
+                    className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-200"
+                  >
+                    Open details
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div className="rounded-[32px] border border-white/10 bg-zinc-900 p-5 shadow-xl">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Recently added events</h3>
+              <p className="text-sm text-zinc-400">Top 3 newest events added to the platform.</p>
+            </div>
+            <button
+              onClick={() => setView("events")}
+              className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300"
+            >
+              View all events
+            </button>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            {mostRecentEvents.map((event) => (
+              <motion.button
+                key={event.id}
+                whileHover={{ y: -2 }}
+                onClick={() => selectEvent(event.id, undefined, true)}
+                className="rounded-3xl border border-white/10 bg-white/5 p-4 text-left transition hover:bg-white/10"
+              >
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300">{event.type}</div>
+                  <Clock3 className="h-4 w-4 text-zinc-500" />
+                </div>
+                <div className="text-lg font-semibold text-white">{event.title}</div>
+                <div className="mt-2 flex items-center gap-2 text-sm text-zinc-400">
+                  <Calendar className="h-4 w-4" />
+                  <span>{formatDate(event.date)} • {event.time}</span>
+                </div>
+                <div className="mt-1 flex items-center gap-2 text-sm text-zinc-400">
+                  <MapPin className="h-4 w-4" />
+                  <span>{event.location}, {event.city}</span>
+                </div>
+                <div className="mt-4 flex items-center justify-between text-sm text-zinc-400">
+                  <span>{event.organizer}</span>
+                  <span className="inline-flex items-center gap-1">
+                    <Users className="h-4 w-4" /> {event.attendees}
+                  </span>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  function EventsPage() {
+    return (
+      <>
+        <PageHero viewKey="events" />
+
+        {showMobileFilters && (
+          <div className="rounded-3xl border border-white/10 bg-zinc-900 p-4 md:hidden">
+            <FilterBar compact />
+          </div>
+        )}
+
+        <div className="hidden rounded-3xl border border-white/10 bg-zinc-900 p-4 md:block">
+          <FilterBar />
+        </div>
+
+        <div className="rounded-[32px] border border-white/10 bg-zinc-900 p-5 shadow-xl">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">All events</h3>
+              <p className="text-sm text-zinc-400">Browse every event and refine the list with filters.</p>
+            </div>
+            <div className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">{filteredEvents.length} matching</div>
+          </div>
+
+          <div className="space-y-3">
+            {filteredEvents.length > 0 ? (
+              filteredEvents.map((event) => <EventCard key={event.id} event={event} />)
+            ) : (
+              <div className="rounded-3xl border border-dashed border-white/10 bg-white/5 p-8 text-center text-sm text-zinc-400">
+                No events match the current filters.
+              </div>
+            )}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  function MapPage() {
+    return (
+      <>
+        <PageHero viewKey="map" />
+
+        <div className="rounded-[32px] border border-white/10 bg-zinc-900 p-5 shadow-xl">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Map discovery</h3>
+              <p className="text-sm text-zinc-400">Pins react to your current filters. Click one to inspect the event.</p>
+            </div>
+            <div className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">{filteredEvents.length} visible pins</div>
+          </div>
+
+          <div className="relative h-[560px] overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_35%),linear-gradient(180deg,rgba(39,39,42,1),rgba(9,9,11,1))]">
+            <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.15)_1px,transparent_1px)] [background-size:42px_42px]" />
+
+            {filteredEvents.map((event, idx) => {
+              const positions = [
+                { left: "20%", top: "28%" },
+                { left: "46%", top: "32%" },
+                { left: "63%", top: "55%" },
+                { left: "28%", top: "68%" },
+                { left: "72%", top: "24%" },
+                { left: "50%", top: "72%" },
+              ];
+              const pos = positions[idx % positions.length];
+              const active = selectedEvent?.id === event.id;
+              const EventTypeIcon = getEventTypeIcon(event.type);
+
+              return (
+                <button
+                  key={event.id}
+                  onClick={() => selectEvent(event.id, "map", true)}
+                  style={pos}
+                  title={`${event.title} • ${event.type}`}
+                  aria-label={`${event.title} • ${event.type}`}
+                  className="absolute -translate-x-1/2 -translate-y-1/2 transition"
+                >
+                  <div className="relative flex flex-col items-center">
+                    <div
+                      className={`flex h-11 w-11 items-center justify-center rounded-full border shadow-lg ${
+                        active ? "border-red-400/50 bg-red-500/20 text-red-100" : "border-white/20 bg-white/10 text-white hover:bg-white/15"
+                      }`}
+                    >
+                      <EventTypeIcon className="h-5 w-5" />
+                    </div>
+                    <div
+                      className={`-mt-1 h-3 w-3 rotate-45 border-b border-r ${
+                        active ? "border-red-400/50 bg-red-500/20" : "border-white/20 bg-white/10"
+                      }`}
+                    />
+                  </div>
+                </button>
+              );
+            })}
+
+            <div className="absolute bottom-4 left-4 right-4 rounded-3xl border border-white/10 bg-black/45 p-4 backdrop-blur">
+              <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
+                <div>
+                  <div className="text-sm font-medium">Map controls</div>
+                  <div className="mt-1 text-xs text-zinc-400">
+                    Use filters on the Events page for event type, location, organizer, and date range. Clicking a pin opens the full event details page.
+                  </div>
+                </div>
+                <button onClick={() => setView("events")} className="rounded-2xl bg-white px-4 py-3 text-sm font-medium text-zinc-900">
+                  Open events list
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  function CalendarPage() {
+    return (
+      <>
+        <PageHero viewKey="calendar" />
+
+        <div className="rounded-[32px] border border-white/10 bg-zinc-900 p-5 shadow-xl">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">My event calendar</h3>
+              <p className="text-sm text-zinc-400">A personal calendar populated from your saved events.</p>
+            </div>
+            <div className="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-zinc-900">{savedEvents.length} saved</div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">April / May 2026</div>
+                  <div className="text-base font-semibold">Subscribed schedule</div>
+                </div>
+                <button className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">Sync export</button>
+              </div>
+
+              <div className="grid grid-cols-7 gap-2 text-center text-xs text-zinc-500">
+                {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((d) => (
+                  <div key={d}>{d}</div>
+                ))}
+              </div>
+              <div className="mt-2 grid grid-cols-7 gap-2 text-sm">
+                {monthDays.map((_, idx) => {
+                  const displayDay = idx < 2 ? "" : idx - 1;
+                  const active = savedDays.includes(displayDay);
+
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        const clicked = savedEvents.find((e) => new Date(`${e.date}T00:00:00`).getDate() === displayDay);
+                        if (clicked) {
+                          setSelectedEventId(clicked.id);
+                          setIsEventModalOpen(true);
+                        }
+                      }}
+                      className={`flex h-11 items-center justify-center rounded-xl border text-sm ${
+                        displayDay === ""
+                          ? "border-transparent text-zinc-700"
+                          : active
+                            ? "border-red-400/30 bg-red-500/15 font-medium text-red-200"
+                            : "border-white/10 bg-white/5 text-zinc-300"
+                      }`}
+                    >
+                      {displayDay}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {savedEvents.length > 0 ? (
+                savedEvents.map((event) => <EventCard key={event.id} event={event} interactive />)
+              ) : (
+                <div className="rounded-3xl border border-dashed border-white/10 bg-white/5 p-8 text-center text-sm text-zinc-400">
+                  Save events from the home or events page to build your personal calendar.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-white">
+      <div className="border-b border-white/10 bg-zinc-950/85 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
+          <div>
+            <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">Clickable Prototype</div>
+            <h1 className="text-2xl font-semibold">Gridline</h1>
+          </div>
+
+          <div className="hidden items-center gap-2 md:flex">
+            {[
+              { key: "home", label: "Home" },
+              { key: "events", label: "Events" },
+              { key: "map", label: "Map" },
+              { key: "calendar", label: "Calendar" },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setView(tab.key as View)}
+                className={`rounded-full px-4 py-2 text-sm transition ${
+                  view === tab.key ? "bg-white text-zinc-900" : "border border-white/10 text-zinc-300"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setShowMobileFilters((s) => !s)}
+            className="rounded-full border border-white/10 bg-white/5 p-2 text-zinc-200 md:hidden"
+          >
+            {showMobileFilters ? <X className="h-5 w-5" /> : <SlidersHorizontal className="h-5 w-5" />}
+          </button>
+        </div>
+      </div>
+
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+        <div className="grid gap-6">
+          <motion.section layout className="space-y-6">
+            {view === "home" && <HomePage />}
+            {view === "events" && <EventsPage />}
+            {view === "map" && <MapPage />}
+            {view === "calendar" && <CalendarPage />}
+          </motion.section>
+        </div>
+
+        {isEventModalOpen && selectedEvent && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm"
+            onClick={() => setIsEventModalOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-[32px] border border-white/10 bg-zinc-900 p-6 shadow-2xl"
+            >
+              <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">Event details</div>
+                  <h3 className="mt-1 text-2xl font-semibold">{selectedEvent.title}</h3>
+                  <div className="mt-2 flex flex-wrap gap-3 text-sm text-zinc-400">
+                    <span className="inline-flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      {selectedEvent.organizer}
+                    </span>
+                    <span className="inline-flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      {formatDate(selectedEvent.date)} • {selectedEvent.time}
+                    </span>
+                    <span className="inline-flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      {selectedEvent.location}, {selectedEvent.city}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="w-full max-w-sm lg:w-80">
+                  <div className="flex justify-start gap-2 lg:justify-end">
+                    <button className="rounded-full border border-white/10 bg-white/5 p-2 text-zinc-300">
+                      <Share2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => toggleSaved(selectedEvent.id)}
+                      title="Add to my calendar"
+                      aria-label="Add to my calendar"
+                      className="rounded-full border border-white/10 bg-white/5 p-2 text-zinc-300"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setIsEventModalOpen(false)}
+                      className="rounded-full border border-white/10 bg-white/5 p-2 text-zinc-300"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-6 lg:grid-cols-[1fr_0.85fr] lg:items-stretch">
+                <div className="flex">
+                  <div className="flex min-h-[22rem] w-full flex-col rounded-3xl border border-white/10 bg-white/5 p-5">
+                    <div className="text-sm font-medium text-white">Overview</div>
+                    <p className="mt-2 text-sm leading-6 text-zinc-400">{selectedEvent.details}</p>
+                  </div>
+                </div>
+
+                <div className="flex">
+                  <div className="flex min-h-[22rem] w-full flex-col rounded-3xl border border-white/10 bg-white/5 p-5">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="text-sm font-medium text-white">Event location</div>
+                      <a
+                        href={getGoogleMapsUrl(selectedEvent)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-zinc-200"
+                      >
+                        Open in Google Maps
+                      </a>
+                    </div>
+                    <div className="relative h-64 overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_35%),linear-gradient(180deg,rgba(39,39,42,1),rgba(9,9,11,1))]">
+                      <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.15)_1px,transparent_1px)] [background-size:36px_36px]" />
+                      <div className="absolute inset-x-6 top-6 rounded-2xl border border-white/10 bg-black/45 px-4 py-3 text-xs text-zinc-300 backdrop-blur">
+                        {selectedEvent.location}, {selectedEvent.city}
+                      </div>
+                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                        <div className="relative flex flex-col items-center">
+                          {(() => {
+                            const SelectedEventTypeIcon = getEventTypeIcon(selectedEvent.type);
+                            return (
+                              <>
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-red-400/50 bg-red-500/20 text-red-100 shadow-lg">
+                                  <SelectedEventTypeIcon className="h-5 w-5" />
+                                </div>
+                                <div className="-mt-1 h-3 w-3 rotate-45 border-b border-r border-red-400/50 bg-red-500/20" />
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                      <div className="absolute bottom-5 left-5 right-5 rounded-2xl border border-white/10 bg-black/45 px-4 py-3 text-xs text-zinc-400 backdrop-blur">
+                        Approx. coordinates: {selectedEvent.lat.toFixed(4)}, {selectedEvent.lng.toFixed(4)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

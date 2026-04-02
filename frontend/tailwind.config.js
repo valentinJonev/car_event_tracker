@@ -1,7 +1,5 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  // Use the `.dark` class on the root element (we toggle it on <html>)
-  darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {

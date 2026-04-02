@@ -10,8 +10,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex items-center justify-center min-h-screen bg-zinc-950">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white/40"></div>
       </div>
     );
   }

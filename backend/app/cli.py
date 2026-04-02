@@ -13,6 +13,7 @@ from app.models.event import Event  # noqa: F401 - needed for relationship resol
 from app.models.subscription import Subscription  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
 from app.models.organiser_request import OrganiserRequest  # noqa: F401
+from app.models.saved_event import SavedEvent  # noqa: F401
 from app.utils.security import hash_password
 
 

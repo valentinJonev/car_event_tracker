@@ -1,5 +1,4 @@
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { Link } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
@@ -91,6 +90,8 @@ interface EventMapProps {
   center?: [number, number];
   zoom?: number;
   className?: string;
+  /** Optional callback when an event is clicked in the popup. */
+  onEventClick?: (event: Event) => void;
 }
 
 export default function EventMap({
@@ -98,6 +99,7 @@ export default function EventMap({
   center,
   zoom,
   className = 'h-[500px] w-full rounded-lg',
+  onEventClick,
 }: EventMapProps) {
   const { t, i18n } = useTranslation();
   return (
@@ -109,8 +111,8 @@ export default function EventMap({
     >
       <AutoFitBounds events={events} center={center} zoom={zoom} />
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
+        url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
       />
 
       {events.map((event) => (
@@ -120,17 +122,30 @@ export default function EventMap({
           icon={getEventIcon(event.event_type)}
         >
           <Popup>
-            <div className="text-sm">
-              <Link
-                to={`/events/${event.id}`}
-                className={`font-semibold hover:underline ${
-                  event.status === 'cancelled'
-                    ? 'text-red-600 line-through'
-                    : 'text-primary-600'
-                }`}
-              >
-                {event.status === 'cancelled' ? `${t('eventMap.cancelledPrefix')} ${event.title}` : event.title}
-              </Link>
+            <div className="text-sm min-w-[180px]">
+              {onEventClick ? (
+                <button
+                  onClick={() => onEventClick(event)}
+                  className={`font-semibold hover:underline text-left ${
+                    event.status === 'cancelled'
+                      ? 'text-red-500 line-through'
+                      : 'text-white'
+                  }`}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                >
+                  {event.status === 'cancelled' ? `${t('eventMap.cancelledPrefix')} ${event.title}` : event.title}
+                </button>
+              ) : (
+                <span
+                  className={`font-semibold ${
+                    event.status === 'cancelled'
+                      ? 'text-red-500 line-through'
+                      : ''
+                  }`}
+                >
+                  {event.status === 'cancelled' ? `${t('eventMap.cancelledPrefix')} ${event.title}` : event.title}
+                </span>
+              )}
               <p className="text-gray-500 mt-1">{event.location_name}</p>
               <p className="text-gray-400 text-xs">
                 {t(`eventTypes.${event.event_type}`)} &middot;{' '}

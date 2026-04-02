@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ArrowLeft, Bell, BellOff, Check } from 'lucide-react';
 import { useOrganiserDetail } from '../hooks/useOrganisers';
 import { useEvents } from '../hooks/useEvents';
 import { useSubscriptions, useCreateSubscription, useDeleteSubscription } from '../hooks/useSubscriptions';
 import { useAuthStore } from '../store/authStore';
 import EventCard from '../components/EventCard';
+import EventDetailModal from '../components/EventDetailModal';
 
 export default function OrganiserDetailPage() {
   const { t, i18n } = useTranslation();
@@ -24,7 +26,7 @@ export default function OrganiserDetailPage() {
   const totalPages = eventsData ? Math.ceil(eventsData.total / limit) : 0;
 
   // Subscription state
-  const { data: subsData } = useSubscriptions();
+  const { data: subsData } = useSubscriptions({ enabled: isAuthenticated });
   const createSub = useCreateSubscription();
   const deleteSub = useDeleteSubscription();
 
@@ -32,6 +34,10 @@ export default function OrganiserDetailPage() {
     (s) => s.filter_type === 'organiser' && s.filter_value === id
   );
   const isSubscribed = !!existingSub;
+
+  // Detail modal
+  const [searchParams, setSearchParams] = useSearchParams();
+  const detailId = searchParams.get('detail');
 
   const handleSubscribe = async () => {
     if (!id || !organiser) return;
@@ -57,7 +63,7 @@ export default function OrganiserDetailPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600" />
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white" />
       </div>
     );
   }
@@ -65,10 +71,10 @@ export default function OrganiserDetailPage() {
   if (isError || !organiser) {
     return (
       <div className="text-center py-20">
-        <h2 className="text-xl text-red-500">{t('organisers.organiserNotFound')}</h2>
+        <h2 className="text-xl text-red-400">{t('organisers.organiserNotFound')}</h2>
         <Link
           to="/organisers"
-          className="text-primary-600 dark:text-primary-400 hover:underline mt-4 inline-block"
+          className="text-white hover:text-zinc-300 mt-4 inline-block"
         >
           {t('organisers.backToOrganisers')}
         </Link>
@@ -81,15 +87,16 @@ export default function OrganiserDetailPage() {
       {/* Back link */}
       <Link
         to="/organisers"
-        className="text-sm text-primary-600 dark:text-primary-400 hover:underline"
+        className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white transition-colors"
       >
-        &larr; {t('organisers.backToOrganisers')}
+        <ArrowLeft className="w-4 h-4" />
+        {t('organisers.backToOrganisers')}
       </Link>
 
       {/* Profile header */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+      <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
         {/* Banner */}
-        <div className="h-32 bg-gradient-to-r from-primary-500 to-primary-700 dark:from-primary-700 dark:to-primary-900" />
+        <div className="h-32 bg-gradient-to-r from-red-500/20 to-violet-500/20" />
 
         <div className="px-6 pb-6 relative">
           {/* Avatar */}
@@ -99,22 +106,22 @@ export default function OrganiserDetailPage() {
                 <img
                   src={organiser.avatar_url}
                   alt={organiser.display_name}
-                  className="w-24 h-24 rounded-full object-cover ring-4 ring-white dark:ring-gray-800 bg-white dark:bg-gray-800"
+                  className="w-24 h-24 rounded-full object-cover ring-4 ring-zinc-950 bg-zinc-900"
                 />
               ) : (
-                <div className="w-24 h-24 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center ring-4 ring-white dark:ring-gray-800">
-                  <span className="text-3xl font-bold text-primary-600 dark:text-primary-400">
+                <div className="w-24 h-24 rounded-full bg-zinc-800 flex items-center justify-center ring-4 ring-zinc-950">
+                  <span className="text-3xl font-bold text-white">
                     {organiser.display_name.charAt(0).toUpperCase()}
                   </span>
                 </div>
               )}
 
               <div className="pb-1">
-                <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+                <h1 className="text-2xl font-bold text-white">
                   {organiser.display_name}
                 </h1>
                 <div className="flex items-center gap-3 mt-0.5">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-zinc-400">
                     {t('organisers.memberSince', { date: formatMemberSince(organiser.created_at) })}
                   </p>
                   {organiser.social_links &&
@@ -125,7 +132,7 @@ export default function OrganiserDetailPage() {
                             href={organiser.social_links.facebook}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                            className="text-zinc-500 hover:text-blue-400 transition-colors"
                             title={t('organisers.facebook')}
                           >
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -138,7 +145,7 @@ export default function OrganiserDetailPage() {
                             href={organiser.social_links.instagram}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-gray-400 hover:text-pink-600 dark:hover:text-pink-400 transition-colors"
+                            className="text-zinc-500 hover:text-pink-400 transition-colors"
                             title={t('organisers.instagram')}
                           >
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -159,31 +166,18 @@ export default function OrganiserDetailPage() {
                   <button
                     onClick={handleUnsubscribe}
                     disabled={deleteSub.isPending}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full border border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10 transition-colors disabled:opacity-50"
                   >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                    <Check className="w-4 h-4" />
                     {t('organisers.subscribed')}
                   </button>
                 ) : (
                   <button
                     onClick={handleSubscribe}
                     disabled={createSub.isPending}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary-600 hover:bg-primary-700 text-white transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full bg-white text-zinc-900 hover:bg-zinc-200 transition-colors disabled:opacity-50"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                      />
-                    </svg>
+                    <Bell className="w-4 h-4" />
                     {t('organisers.subscribe')}
                   </button>
                 )}
@@ -193,36 +187,29 @@ export default function OrganiserDetailPage() {
             {!isAuthenticated && (
               <Link
                 to="/login"
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full bg-white text-zinc-900 hover:bg-zinc-200 transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                  />
-                </svg>
+                <BellOff className="w-4 h-4" />
                 {t('organisers.signInToSubscribe')}
               </Link>
             )}
           </div>
 
           {/* Stats row */}
-          <div className="flex gap-6 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex gap-6 mt-6 pt-4 border-t border-white/10">
             <div>
-              <span className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+              <span className="text-2xl font-bold text-white">
                 {organiser.event_count}
               </span>
-              <span className="ml-1 text-sm text-gray-500 dark:text-gray-400">
+              <span className="ml-1 text-sm text-zinc-400">
                 {t('organisers.totalEvents')}
               </span>
             </div>
             <div>
-              <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+              <span className="text-2xl font-bold text-red-400">
                 {organiser.upcoming_event_count}
               </span>
-              <span className="ml-1 text-sm text-gray-500 dark:text-gray-400">
+              <span className="ml-1 text-sm text-zinc-400">
                 {t('organisers.upcoming')}
               </span>
             </div>
@@ -232,18 +219,18 @@ export default function OrganiserDetailPage() {
 
       {/* Events section */}
       <div className="space-y-4">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+        <h2 className="text-xl font-bold text-white">
           {t('organisers.eventsByOrganiser', { name: organiser.display_name })}
         </h2>
 
         {eventsLoading && (
           <div className="flex justify-center py-10">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
           </div>
         )}
 
         {eventsData && eventsData.items.length === 0 && (
-          <div className="text-center py-10 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="text-center py-10 text-zinc-400 bg-white/5 border border-white/10 rounded-3xl">
             {t('organisers.noEventsYet')}
           </div>
         )}
@@ -262,17 +249,17 @@ export default function OrganiserDetailPage() {
                 <button
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
-                  className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300"
+                  className="px-4 py-2 text-sm border border-white/10 bg-white/5 rounded-full disabled:opacity-40 hover:bg-white/10 text-zinc-300 transition-colors"
                 >
                   {t('common.previous')}
                 </button>
-                <span className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-sm text-zinc-500">
                   {t('common.page', { current: page + 1, total: totalPages })}
                 </span>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={page >= totalPages - 1}
-                  className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300"
+                  className="px-4 py-2 text-sm border border-white/10 bg-white/5 rounded-full disabled:opacity-40 hover:bg-white/10 text-zinc-300 transition-colors"
                 >
                   {t('common.next')}
                 </button>
@@ -281,6 +268,17 @@ export default function OrganiserDetailPage() {
           </>
         )}
       </div>
+
+      {/* Event detail modal */}
+      {detailId && (
+        <EventDetailModal
+          eventId={detailId}
+          onClose={() => {
+            searchParams.delete('detail');
+            setSearchParams(searchParams, { replace: true });
+          }}
+        />
+      )}
     </div>
   );
 }

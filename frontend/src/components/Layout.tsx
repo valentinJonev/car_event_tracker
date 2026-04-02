@@ -1,17 +1,11 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Menu, X, Home, CalendarDays, Map, Users, PlusCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { useThemeStore } from '../store/themeStore';
 import { RoleGuard } from './RoleGuard';
 import NotificationBell from './NotificationBell';
 import UserDropdown from './UserDropdown';
-
-const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-    isActive
-      ? 'bg-primary-700 text-white'
-      : 'text-gray-300 hover:bg-primary-600 hover:text-white'
-  }`;
 
 function LanguageSwitcher() {
   const { i18n } = useTranslation();
@@ -24,7 +18,7 @@ function LanguageSwitcher() {
   return (
     <button
       onClick={toggle}
-      className="text-gray-300 hover:text-white p-2 rounded-md transition-colors text-sm font-medium"
+      className="rounded-full border border-white/10 px-3 py-1.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-white/10 hover:text-white"
       title={currentLang === 'en' ? 'Switch to Bulgarian' : 'Switch to English'}
     >
       {currentLang === 'en' ? 'BG' : 'EN'}
@@ -32,140 +26,217 @@ function LanguageSwitcher() {
   );
 }
 
-function ThemeToggle() {
-  const { theme, toggleTheme } = useThemeStore();
-  const { t } = useTranslation();
-
-  return (
-    <button
-      onClick={toggleTheme}
-      className="text-gray-300 hover:text-white p-2 rounded-md transition-colors"
-      aria-label={t('theme.toggleDarkMode')}
-      title={theme === 'dark' ? t('theme.switchToLight') : t('theme.switchToDark')}
-    >
-      {theme === 'dark' ? (
-        /* Sun icon */
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-      ) : (
-        /* Moon icon */
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-        </svg>
-      )}
-    </button>
-  );
-}
+const navItems = [
+  { to: '/', label: 'nav.home', exact: true, minW: 'min-w-[5.5rem]', icon: Home },
+  { to: '/events', label: 'nav.events', exact: false, minW: 'min-w-[5.5rem]', icon: CalendarDays },
+  { to: '/map', label: 'nav.map', exact: false, minW: 'min-w-[4.5rem]', icon: Map },
+  { to: '/organisers', label: 'nav.organisers', exact: false, minW: 'min-w-[8rem]', icon: Users },
+] as const;
 
 export function Layout() {
   const { isAuthenticated } = useAuthStore();
   const { t } = useTranslation();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Lock body scroll when sidebar is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div className="min-h-screen bg-zinc-950 text-white">
       {/* Navbar */}
-      <nav className="bg-primary-800 dark:bg-gray-800 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Left side: logo + nav links */}
-            <div className="flex items-center space-x-4">
-              <Link
-                to="/"
-                className="text-white font-bold text-xl tracking-tight"
-              >
-                {t('common.appName')}
-              </Link>
-
-              <div className="hidden md:flex items-center space-x-1">
-                <NavLink to="/events" className={navLinkClass}>
-                  {t('nav.events')}
-                </NavLink>
-                <NavLink to="/map" className={navLinkClass}>
-                  {t('nav.map')}
-                </NavLink>
-                <NavLink to="/organisers" className={navLinkClass}>
-                  {t('nav.organisers')}
-                </NavLink>
-
-                {isAuthenticated && (
-                  <>
-                    <RoleGuard roles={['organiser', 'admin']}>
-                      <NavLink to="/events/new" className={navLinkClass}>
-                        {t('nav.createEvent')}
-                      </NavLink>
-                    </RoleGuard>
-
-                    <RoleGuard roles={['admin']}>
-                      <NavLink to="/admin" className={navLinkClass}>
-                        {t('nav.admin')}
-                      </NavLink>
-                    </RoleGuard>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Right side: language + theme toggle + auth actions */}
-            <div className="flex items-center space-x-3">
-              <LanguageSwitcher />
-              <ThemeToggle />
-
-              {isAuthenticated ? (
-                <>
-                  <NotificationBell />
-                  <UserDropdown />
-                </>
-              ) : (
-                <>
-                  <Link
-                    to="/login"
-                    className="text-gray-300 hover:text-white text-sm font-medium"
-                  >
-                    {t('nav.signIn')}
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="bg-primary-600 hover:bg-primary-500 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
-                  >
-                    {t('nav.signUp')}
-                  </Link>
-                </>
-              )}
-            </div>
+      <nav className="sticky top-0 z-40 border-b border-white/10 bg-zinc-950/85 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
+          {/* Left: Brand */}
+          <div className="flex items-center gap-6">
+            <Link to="/" className="flex flex-col">
+              <span className="text-[10px] uppercase tracking-[0.3em] text-zinc-500">
+                {t('common.appTagline', { defaultValue: 'Car Event Platform' })}
+              </span>
+              <h1 className="text-2xl font-semibold">{t('common.appName')}</h1>
+            </Link>
           </div>
-        </div>
 
-        {/* Mobile nav */}
-        <div className="md:hidden px-2 pb-3 space-y-1">
-          <NavLink to="/events" className={navLinkClass}>
-            {t('nav.events')}
-          </NavLink>
-          <NavLink to="/map" className={navLinkClass}>
-            {t('nav.map')}
-          </NavLink>
-          <NavLink to="/organisers" className={navLinkClass}>
-            {t('nav.organisers')}
-          </NavLink>
-          {isAuthenticated && (
-            <>
-              <RoleGuard roles={['organiser', 'admin']}>
-                <NavLink to="/events/new" className={navLinkClass}>
-                  {t('nav.createEvent')}
-                </NavLink>
-              </RoleGuard>
-              <RoleGuard roles={['admin']}>
-                <NavLink to="/admin" className={navLinkClass}>
-                  {t('nav.admin')}
-                </NavLink>
-              </RoleGuard>
-            </>
-          )}
+          {/* Center: Nav pills (desktop) */}
+          <div className="hidden items-center gap-2 md:flex">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.exact}
+                className={({ isActive }) =>
+                  `${item.minW} rounded-full px-4 py-2 text-center text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-white text-zinc-900'
+                      : 'border border-white/10 text-zinc-300 hover:bg-white/10 hover:text-white'
+                  }`
+                }
+              >
+                {t(item.label)}
+              </NavLink>
+            ))}
+
+            {isAuthenticated && (
+              <>
+                <RoleGuard roles={['organiser', 'admin']}>
+                  <NavLink
+                    to="/events/new"
+                    className={({ isActive }) =>
+                      `min-w-[9rem] rounded-full px-4 py-2 text-center text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'bg-white text-zinc-900'
+                          : 'border border-white/10 text-zinc-300 hover:bg-white/10 hover:text-white'
+                      }`
+                    }
+                  >
+                    {t('nav.createEvent')}
+                  </NavLink>
+                </RoleGuard>
+
+              </>
+            )}
+          </div>
+
+          {/* Right: Controls */}
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+
+            {isAuthenticated ? (
+              <>
+                <NotificationBell />
+                <UserDropdown />
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="text-sm font-medium text-zinc-300 hover:text-white transition-colors"
+                >
+                  {t('nav.signIn')}
+                </Link>
+                <Link
+                  to="/register"
+                  className="min-w-[7.5rem] rounded-full bg-white px-4 py-2 text-center text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200"
+                >
+                  {t('nav.signUp')}
+                </Link>
+              </>
+            )}
+
+            {/* Mobile menu toggle */}
+            <button
+              onClick={() => setMobileOpen((s) => !s)}
+              className="rounded-full border border-white/10 bg-white/5 p-2 text-zinc-200 md:hidden"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </nav>
 
+      {/* Mobile sidebar overlay */}
+      <div
+        className={`fixed inset-0 z-50 md:hidden transition-opacity duration-300 ${
+          mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          onClick={() => setMobileOpen(false)}
+        />
+
+        {/* Sidebar panel */}
+        <aside
+          className={`absolute top-0 right-0 h-full w-72 bg-zinc-950 border-l border-white/10 flex flex-col transition-transform duration-300 ease-out ${
+            mobileOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+            <span className="text-sm font-semibold text-white">{t('nav.menu', { defaultValue: 'Menu' })}</span>
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="rounded-full p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Nav links */}
+          <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.exact}
+                  onClick={() => setMobileOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-white text-zinc-900'
+                        : 'text-zinc-300 hover:bg-white/5 hover:text-white'
+                    }`
+                  }
+                >
+                  <Icon className="h-5 w-5 shrink-0" />
+                  {t(item.label)}
+                </NavLink>
+              );
+            })}
+
+            {isAuthenticated && (
+              <RoleGuard roles={['organiser', 'admin']}>
+                <NavLink
+                  to="/events/new"
+                  onClick={() => setMobileOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-white text-zinc-900'
+                        : 'text-zinc-300 hover:bg-white/5 hover:text-white'
+                    }`
+                  }
+                >
+                  <PlusCircle className="h-5 w-5 shrink-0" />
+                  {t('nav.createEvent')}
+                </NavLink>
+              </RoleGuard>
+            )}
+          </nav>
+
+          {/* Footer: auth actions for guests */}
+          {!isAuthenticated && (
+            <div className="border-t border-white/10 px-4 py-4 space-y-2">
+              <Link
+                to="/login"
+                onClick={() => setMobileOpen(false)}
+                className="block w-full rounded-full border border-white/10 px-4 py-2.5 text-center text-sm font-medium text-zinc-300 hover:bg-white/5 hover:text-white transition-colors"
+              >
+                {t('nav.signIn')}
+              </Link>
+              <Link
+                to="/register"
+                onClick={() => setMobileOpen(false)}
+                className="block w-full rounded-full bg-white px-4 py-2.5 text-center text-sm font-medium text-zinc-900 hover:bg-zinc-200 transition-colors"
+              >
+                {t('nav.signUp')}
+              </Link>
+            </div>
+          )}
+        </aside>
+      </div>
+
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
         <Outlet />
       </main>
     </div>

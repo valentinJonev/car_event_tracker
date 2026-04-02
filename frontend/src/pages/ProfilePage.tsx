@@ -1,5 +1,6 @@
-import { useState, FormEvent } from 'react';
+import { useState, useRef, useEffect, FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { User, Link2, Lock, Bell, Newspaper, Menu, X } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import {
   useSubscriptions,
@@ -30,31 +31,11 @@ const FILTER_TYPE_VALUES = ['event_type', 'organiser', 'location'] as const;
 type SectionKey = 'profile' | 'social' | 'password' | 'notifications' | 'subscriptions';
 
 const NAV_ICONS: Record<SectionKey, JSX.Element> = {
-  profile: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-    </svg>
-  ),
-  social: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-    </svg>
-  ),
-  password: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-    </svg>
-  ),
-  notifications: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-    </svg>
-  ),
-  subscriptions: (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-    </svg>
-  ),
+  profile: <User className="w-5 h-5" />,
+  social: <Link2 className="w-5 h-5" />,
+  password: <Lock className="w-5 h-5" />,
+  notifications: <Bell className="w-5 h-5" />,
+  subscriptions: <Newspaper className="w-5 h-5" />,
 };
 
 const NAV_KEYS: SectionKey[] = ['profile', 'social', 'password', 'notifications', 'subscriptions'];
@@ -62,11 +43,14 @@ const NAV_KEYS: SectionKey[] = ['profile', 'social', 'password', 'notifications'
 /* ── Reusable helpers ──────────────────────────────────────────────────── */
 
 const inputCls =
-  'w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500';
+  'w-full bg-white/5 border border-white/10 text-white rounded-2xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/20 placeholder-zinc-500';
+
+const selectCls =
+  'w-full bg-zinc-900 border border-white/10 text-white rounded-2xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/20';
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
+    <h2 className="text-lg font-semibold text-white mb-4">
       {children}
     </h2>
   );
@@ -75,7 +59,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 function SuccessBanner({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded-md mb-4 text-sm">
+    <div className="bg-emerald-500/10 border border-emerald-400/20 text-emerald-300 px-4 py-3 rounded-2xl mb-4 text-sm">
       {message}
     </div>
   );
@@ -84,9 +68,21 @@ function SuccessBanner({ message }: { message: string | null }) {
 function ErrorBanner({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-md mb-4 text-sm">
+    <div className="bg-red-500/10 border border-red-400/20 text-red-300 px-4 py-3 rounded-2xl mb-4 text-sm">
       {message}
     </div>
+  );
+}
+
+function PrimaryButton({ children, disabled, type = 'submit' }: { children: React.ReactNode; disabled?: boolean; type?: 'submit' | 'button' }) {
+  return (
+    <button
+      type={type}
+      disabled={disabled}
+      className="bg-white text-zinc-900 text-sm font-medium px-5 py-2.5 rounded-full hover:bg-zinc-200 disabled:opacity-50 transition-colors"
+    >
+      {children}
+    </button>
   );
 }
 
@@ -137,22 +133,22 @@ function ProfileSection() {
           <img
             src={user.avatar_url}
             alt={user.display_name}
-            className="h-16 w-16 rounded-full object-cover border-2 border-primary-500"
+            className="h-16 w-16 rounded-full object-cover ring-2 ring-white/20"
           />
         ) : (
-          <span className="h-16 w-16 rounded-full bg-primary-600 flex items-center justify-center text-white text-xl font-bold border-2 border-primary-500">
+          <span className="h-16 w-16 rounded-full bg-white/10 flex items-center justify-center text-white text-xl font-bold ring-2 ring-white/20">
             {initials}
           </span>
         )}
         <div>
-          <p className="text-gray-800 dark:text-gray-100 font-medium">
+          <p className="text-white font-medium">
             {user?.display_name}
           </p>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">
+          <p className="text-zinc-400 text-sm">
             {user?.email}
           </p>
           {(user?.role === 'organiser' || user?.role === 'admin') && (
-            <span className="inline-block mt-1 text-xs bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded-full">
+            <span className="inline-block mt-1 text-xs bg-white/10 text-zinc-300 px-2 py-0.5 rounded-full border border-white/10">
               {user.role}
             </span>
           )}
@@ -161,7 +157,7 @@ function ProfileSection() {
 
       <form onSubmit={onSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+          <label className="block text-sm text-zinc-400 mb-1">
             {t('profile.displayName')}
           </label>
           <input
@@ -175,7 +171,7 @@ function ProfileSection() {
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+          <label className="block text-sm text-zinc-400 mb-1">
             {t('profile.avatarUrl')}
           </label>
           <input
@@ -187,26 +183,22 @@ function ProfileSection() {
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+          <label className="block text-sm text-zinc-400 mb-1">
             {t('profile.emailLabel')}
           </label>
           <input
             type="email"
             value={user?.email ?? ''}
             readOnly
-            className={`${inputCls} bg-gray-100 dark:bg-gray-600 cursor-not-allowed`}
+            className={`${inputCls} opacity-50 cursor-not-allowed`}
           />
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+          <p className="text-xs text-zinc-500 mt-1">
             {t('profile.emailReadonly')}
           </p>
         </div>
-        <button
-          type="submit"
-          disabled={saving}
-          className="bg-primary-600 hover:bg-primary-700 text-white text-sm px-5 py-2 rounded-md disabled:opacity-50 transition-colors"
-        >
+        <PrimaryButton disabled={saving}>
           {saving ? t('common.saving') : t('profile.saveProfile')}
-        </button>
+        </PrimaryButton>
       </form>
     </>
   );
@@ -250,7 +242,7 @@ function SocialLinksSection() {
       <ErrorBanner message={error} />
       <form onSubmit={onSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+          <label className="block text-sm text-zinc-400 mb-1">
             {t('profile.facebookPageUrl')}
           </label>
           <input
@@ -262,7 +254,7 @@ function SocialLinksSection() {
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+          <label className="block text-sm text-zinc-400 mb-1">
             {t('profile.instagramPageUrl')}
           </label>
           <input
@@ -273,13 +265,9 @@ function SocialLinksSection() {
             className={inputCls}
           />
         </div>
-        <button
-          type="submit"
-          disabled={saving}
-          className="bg-primary-600 hover:bg-primary-700 text-white text-sm px-5 py-2 rounded-md disabled:opacity-50 transition-colors"
-        >
+        <PrimaryButton disabled={saving}>
           {saving ? t('common.saving') : t('profile.saveSocialLinks')}
-        </button>
+        </PrimaryButton>
       </form>
     </>
   );
@@ -338,7 +326,7 @@ function PasswordSection() {
     return (
       <>
         <SectionTitle>{t('profile.changePassword')}</SectionTitle>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-zinc-400">
           {t('profile.oauthPasswordNote')}
         </p>
       </>
@@ -352,7 +340,7 @@ function PasswordSection() {
       <ErrorBanner message={error} />
       <form onSubmit={onSubmit} className="space-y-4 max-w-md">
         <div>
-          <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+          <label className="block text-sm text-zinc-400 mb-1">
             {t('profile.currentPassword')}
           </label>
           <input
@@ -364,7 +352,7 @@ function PasswordSection() {
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+          <label className="block text-sm text-zinc-400 mb-1">
             {t('profile.newPassword')}
           </label>
           <input
@@ -377,7 +365,7 @@ function PasswordSection() {
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+          <label className="block text-sm text-zinc-400 mb-1">
             {t('profile.confirmNewPassword')}
           </label>
           <input
@@ -389,13 +377,9 @@ function PasswordSection() {
             className={inputCls}
           />
         </div>
-        <button
-          type="submit"
-          disabled={saving}
-          className="bg-primary-600 hover:bg-primary-700 text-white text-sm px-5 py-2 rounded-md disabled:opacity-50 transition-colors"
-        >
+        <PrimaryButton disabled={saving}>
           {saving ? t('profile.changing') : t('profile.changePassword')}
-        </button>
+        </PrimaryButton>
       </form>
     </>
   );
@@ -442,35 +426,31 @@ function NotificationPreferencesSection() {
       <SuccessBanner message={success} />
       <ErrorBanner message={error} />
       <form onSubmit={onSubmit} className="space-y-4">
-        <label className="flex items-center space-x-3 cursor-pointer">
+        <label className="flex items-center space-x-3 cursor-pointer group">
           <input
             type="checkbox"
             checked={emailNotif}
             onChange={(e) => setEmailNotif(e.target.checked)}
-            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+            className="h-4 w-4 rounded border-white/20 bg-white/5 text-white focus:ring-white/20"
           />
-          <span className="text-sm text-gray-700 dark:text-gray-300">
+          <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">
             {t('profile.emailNotifications')}
           </span>
         </label>
-        <label className="flex items-center space-x-3 cursor-pointer">
+        <label className="flex items-center space-x-3 cursor-pointer group">
           <input
             type="checkbox"
             checked={pushNotif}
             onChange={(e) => setPushNotif(e.target.checked)}
-            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+            className="h-4 w-4 rounded border-white/20 bg-white/5 text-white focus:ring-white/20"
           />
-          <span className="text-sm text-gray-700 dark:text-gray-300">
+          <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">
             {t('profile.pushNotifications')}
           </span>
         </label>
-        <button
-          type="submit"
-          disabled={saving}
-          className="bg-primary-600 hover:bg-primary-700 text-white text-sm px-5 py-2 rounded-md disabled:opacity-50 transition-colors"
-        >
+        <PrimaryButton disabled={saving}>
           {saving ? t('common.saving') : t('profile.savePreferences')}
-        </button>
+        </PrimaryButton>
       </form>
     </>
   );
@@ -561,7 +541,7 @@ function SubscriptionsSection() {
 
       {/* Create form */}
       <div className="mb-6">
-        <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
+        <h3 className="text-sm font-medium text-zinc-400 mb-3">
           {t('subscriptions.addSubscription')}
         </h3>
 
@@ -570,7 +550,7 @@ function SubscriptionsSection() {
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <label className="block text-xs text-zinc-500 mb-1">
                 {t('subscriptions.filterType')}
               </label>
               <select
@@ -580,7 +560,7 @@ function SubscriptionsSection() {
                   setFilterValue('');
                   setSelectedOrganiser(null);
                 }}
-                className={inputCls}
+                className={selectCls}
               >
                 {FILTER_TYPE_VALUES.map((ft) => (
                   <option key={ft} value={ft}>
@@ -591,7 +571,7 @@ function SubscriptionsSection() {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <label className="block text-xs text-zinc-500 mb-1">
                 {filterType === 'organiser'
                   ? t('subscriptions.organiser')
                   : filterType === 'event_type'
@@ -603,7 +583,7 @@ function SubscriptionsSection() {
                   value={filterValue}
                   onChange={(e) => setFilterValue(e.target.value)}
                   required
-                  className={inputCls}
+                  className={selectCls}
                 >
                   <option value="">{t('subscriptions.selectType')}</option>
                   {EVENT_TYPE_VALUES.map((et) => (
@@ -631,7 +611,7 @@ function SubscriptionsSection() {
 
             {filterType === 'location' && (
               <div>
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <label className="block text-xs text-zinc-500 mb-1">
                   {t('subscriptions.radiusKm')}
                 </label>
                 <input
@@ -646,25 +626,21 @@ function SubscriptionsSection() {
             )}
           </div>
 
-          <button
-            type="submit"
-            disabled={createSub.isPending}
-            className="bg-primary-600 hover:bg-primary-700 text-white text-sm px-4 py-2 rounded-md disabled:opacity-50 transition-colors"
-          >
+          <PrimaryButton disabled={createSub.isPending}>
             {createSub.isPending ? t('subscriptions.adding') : t('subscriptions.addSubscriptionBtn')}
-          </button>
+          </PrimaryButton>
         </form>
       </div>
 
       {/* Existing subscriptions */}
       {isLoading && (
         <div className="flex justify-center py-6">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
         </div>
       )}
 
       {data && data.items.length === 0 && (
-        <p className="text-center text-gray-500 dark:text-gray-400 text-sm py-4">
+        <p className="text-center text-zinc-500 text-sm py-4">
           {t('subscriptions.noSubscriptions')}
         </p>
       )}
@@ -674,17 +650,17 @@ function SubscriptionsSection() {
           {data.items.map((sub) => (
             <div
               key={sub.id}
-              className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 flex items-center justify-between"
+              className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between"
             >
               <div>
-                <span className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500 mr-2">
+                <span className="text-xs uppercase tracking-wide text-zinc-500 mr-2">
                   {displayFilterType(sub.filter_type)}
                 </span>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                <span className="text-sm font-medium text-zinc-200">
                   {displayFilterValue(sub)}
                 </span>
                 {sub.filter_type === 'location' && !!sub.filter_meta?.radius_km && (
-                  <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+                  <span className="ml-2 text-xs text-zinc-500">
                     ({String(sub.filter_meta.radius_km)} km)
                   </span>
                 )}
@@ -692,7 +668,7 @@ function SubscriptionsSection() {
               <button
                 onClick={() => handleDelete(sub.id)}
                 disabled={deleteSub.isPending}
-                className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm disabled:opacity-50"
+                className="text-red-400 hover:text-red-300 text-sm disabled:opacity-50 transition-colors"
               >
                 {t('common.remove')}
               </button>
@@ -726,6 +702,21 @@ function renderSection(key: SectionKey) {
 export default function ProfilePage() {
   const { t } = useTranslation();
   const [activeSection, setActiveSection] = useState<SectionKey>('profile');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const mobileNavRef = useRef<HTMLDivElement>(null);
+
+  // Close mobile nav on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (mobileNavRef.current && !mobileNavRef.current.contains(event.target as Node)) {
+        setMobileNavOpen(false);
+      }
+    }
+    if (mobileNavOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [mobileNavOpen]);
 
   const navLabels: Record<SectionKey, string> = {
     profile: t('profile.profile'),
@@ -737,47 +728,69 @@ export default function ProfilePage() {
 
   return (
     <div className="flex flex-col md:flex-row gap-6 max-w-5xl mx-auto">
-      {/* ── Mobile horizontal nav ─────────────────────────────────────── */}
-      <div className="md:hidden overflow-x-auto">
-        <div className="flex space-x-1 min-w-max bg-white dark:bg-gray-800 shadow-md rounded-lg p-1.5">
-          {NAV_KEYS.map((key) => (
-            <button
-              key={key}
-              onClick={() => setActiveSection(key)}
-              className={`flex items-center space-x-1.5 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
-                activeSection === key
-                  ? 'bg-primary-600 text-white'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              {NAV_ICONS[key]}
-              <span>{navLabels[key]}</span>
-            </button>
-          ))}
-        </div>
+      {/* ── Mobile hamburger nav ──────────────────────────────────────── */}
+      <div className="md:hidden relative" ref={mobileNavRef}>
+        <button
+          onClick={() => setMobileNavOpen((s) => !s)}
+          className="flex items-center gap-3 w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 transition-colors hover:bg-white/10"
+        >
+          {mobileNavOpen ? (
+            <X className="h-5 w-5 text-zinc-400" />
+          ) : (
+            <Menu className="h-5 w-5 text-zinc-400" />
+          )}
+          <span className="flex items-center gap-2 text-sm font-medium text-white">
+            {NAV_ICONS[activeSection]}
+            {navLabels[activeSection]}
+          </span>
+        </button>
+
+        {mobileNavOpen && (
+          <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-zinc-900 border border-white/10 rounded-2xl p-1.5 shadow-2xl space-y-0.5">
+            {NAV_KEYS.map((key) => (
+              <button
+                key={key}
+                onClick={() => {
+                  setActiveSection(key);
+                  setMobileNavOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                  activeSection === key
+                    ? 'bg-white text-zinc-900'
+                    : 'text-zinc-300 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <span className={activeSection === key ? 'text-zinc-900' : 'text-zinc-500'}>
+                  {NAV_ICONS[key]}
+                </span>
+                {navLabels[key]}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── Desktop sidebar ───────────────────────────────────────────── */}
       <aside className="hidden md:block w-56 flex-shrink-0">
-        <nav className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-2 sticky top-24 space-y-1">
-          <h2 className="px-3 pt-2 pb-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+        <nav className="bg-white/5 border border-white/10 rounded-3xl p-2 sticky top-24 space-y-1">
+          <h2 className="px-3 pt-2 pb-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
             {t('profile.settings')}
           </h2>
           {NAV_KEYS.map((key) => (
             <button
               key={key}
               onClick={() => setActiveSection(key)}
-              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-colors ${
                 activeSection === key
-                  ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                  ? 'bg-white/10 text-white'
+                  : 'text-zinc-400 hover:text-white hover:bg-white/5'
               }`}
             >
               <span
                 className={
                   activeSection === key
-                    ? 'text-primary-600 dark:text-primary-400'
-                    : 'text-gray-400 dark:text-gray-500'
+                    ? 'text-white'
+                    : 'text-zinc-500'
                 }
               >
                 {NAV_ICONS[key]}
@@ -790,7 +803,7 @@ export default function ProfilePage() {
 
       {/* ── Content area ──────────────────────────────────────────────── */}
       <main className="flex-1 min-w-0">
-        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+        <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
           {renderSection(activeSection)}
         </div>
       </main>

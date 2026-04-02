@@ -55,6 +55,7 @@ def create_app() -> FastAPI:
     from app.api.v1.admin import router as admin_router
     from app.api.v1.users import router as users_router
     from app.api.v1.calendar import router as calendar_router
+    from app.api.v1.stats import router as stats_router
 
     app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
     app.include_router(events_router, prefix="/api/v1/events", tags=["Events"])
@@ -74,6 +75,7 @@ def create_app() -> FastAPI:
     app.include_router(
         calendar_router, prefix="/api/v1/calendar", tags=["Personal Calendar"]
     )
+    app.include_router(stats_router, prefix="/api/v1/stats", tags=["Platform Stats"])
 
     @app.get("/health", tags=["Health"])
     async def health_check():

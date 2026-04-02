@@ -47,16 +47,16 @@ export default function LocationPicker({
 
   return (
     <div className="space-y-2">
-      <p className="text-sm text-gray-500 dark:text-gray-400">{t('locationPicker.clickToSet')}</p>
+      <p className="text-sm text-zinc-400">{t('locationPicker.clickToSet')}</p>
       <MapContainer
         center={center}
         zoom={lat ? 13 : 7}
-        className="h-64 w-full rounded-lg border border-gray-300 dark:border-gray-600"
+        className="h-64 w-full rounded-2xl border border-white/10"
         scrollWheelZoom
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
+          url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
         />
         <ClickHandler onChange={onChange} />
         {lat !== null && lng !== null && (
@@ -64,7 +64,7 @@ export default function LocationPicker({
         )}
       </MapContainer>
       {lat !== null && lng !== null && (
-        <p className="text-xs text-gray-400 dark:text-gray-500">
+        <p className="text-xs text-zinc-500">
           {t('locationPicker.latLng', { lat: lat.toFixed(6), lng: lng.toFixed(6) })}
         </p>
       )}

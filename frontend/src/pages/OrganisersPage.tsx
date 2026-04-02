@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Search, Users } from 'lucide-react';
 import { useOrganisers } from '../hooks/useOrganisers';
 import OrganiserCard from '../components/OrganiserCard';
+import PageHero from '../components/PageHero';
 
 export default function OrganisersPage() {
   const { t } = useTranslation();
@@ -19,26 +21,21 @@ export default function OrganisersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-          {t('organisers.title')}
-        </h1>
+      <PageHero
+        eyebrow={t('organisers.eyebrow', { defaultValue: 'Community of event creators' })}
+        title={t('organisers.title')}
+        description={t('organisers.heroDescription', {
+          defaultValue:
+            'Discover the people behind the events. Follow your favourite organisers to get notified about new events.',
+        })}
+        accent="blue"
+      />
 
-        <div className="flex flex-col sm:flex-row gap-3">
+      <div className="max-w-6xl mx-auto">
+        {/* Search bar */}
+        <div className="flex justify-end mb-6">
           <div className="relative">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
             <input
               type="text"
               placeholder={t('organisers.searchPlaceholder')}
@@ -47,62 +44,63 @@ export default function OrganisersPage() {
                 setSearch(e.target.value);
                 setPage(0);
               }}
-              className="pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 w-full sm:w-64"
+              className="pl-9 pr-3 py-2.5 bg-white/5 border border-white/10 text-white rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-white/20 placeholder-zinc-500 w-full sm:w-72"
             />
           </div>
         </div>
-      </div>
 
-      {isLoading && (
-        <div className="flex justify-center py-20">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600" />
-        </div>
-      )}
-
-      {isError && (
-        <div className="text-center py-20 text-red-500">
-          {t('organisers.failedToLoad')}
-        </div>
-      )}
-
-      {data && data.items.length === 0 && (
-        <div className="text-center py-20 text-gray-500 dark:text-gray-400">
-          {t('organisers.noOrganisers')}
-        </div>
-      )}
-
-      {data && data.items.length > 0 && (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {data.items.map((organiser) => (
-              <OrganiserCard key={organiser.id} organiser={organiser} />
-            ))}
+        {isLoading && (
+          <div className="flex justify-center py-20">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white" />
           </div>
+        )}
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 pt-4">
-              <button
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-                disabled={page === 0}
-                className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300"
-              >
-                {t('common.previous')}
-              </button>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {t('common.page', { current: page + 1, total: totalPages })}
-              </span>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                disabled={page >= totalPages - 1}
-                className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300"
-              >
-                {t('common.next')}
-              </button>
+        {isError && (
+          <div className="text-center py-20 text-red-400">
+            {t('organisers.failedToLoad')}
+          </div>
+        )}
+
+        {data && data.items.length === 0 && (
+          <div className="text-center py-20">
+            <Users className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
+            <p className="text-zinc-400">{t('organisers.noOrganisers')}</p>
+          </div>
+        )}
+
+        {data && data.items.length > 0 && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {data.items.map((organiser) => (
+                <OrganiserCard key={organiser.id} organiser={organiser} />
+              ))}
             </div>
-          )}
-        </>
-      )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 pt-8">
+                <button
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  className="min-w-[6.5rem] px-4 py-2 text-center text-sm border border-white/10 bg-white/5 rounded-full disabled:opacity-40 hover:bg-white/10 text-zinc-300 transition-colors"
+                >
+                  {t('common.previous')}
+                </button>
+                <span className="text-sm text-zinc-500">
+                  {t('common.page', { current: page + 1, total: totalPages })}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  disabled={page >= totalPages - 1}
+                  className="min-w-[6.5rem] px-4 py-2 text-center text-sm border border-white/10 bg-white/5 rounded-full disabled:opacity-40 hover:bg-white/10 text-zinc-300 transition-colors"
+                >
+                  {t('common.next')}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

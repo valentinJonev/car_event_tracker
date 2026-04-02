@@ -210,3 +210,40 @@ export interface CalendarFeedInfo {
   calendar_feed_token: string | null;
   feed_url: string | null;
 }
+
+// ── Platform Stats ─────────────────────────────────────────────────────
+
+export interface FeaturedEventOrganiser {
+  id: string;
+  display_name: string;
+  avatar_url: string | null;
+}
+
+export interface FeaturedEvent {
+  id: string;
+  title: string;
+  description: string | null;
+  event_type: EventType;
+  status: EventStatus;
+  start_datetime: string;
+  end_datetime: string | null;
+  is_all_day: boolean;
+  location_name: string;
+  address: string | null;
+  latitude: number;
+  longitude: number;
+  cover_image_url: string | null;
+  max_attendees: number | null;
+  organiser_id: string;
+  organiser: FeaturedEventOrganiser | null;
+  save_count: number;
+  is_admin_pick: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlatformStats {
+  total_users: number;
+  total_organisers: number;
+  featured_event: FeaturedEvent | null;
+}

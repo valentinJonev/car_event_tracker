@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Award, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useMyOrgRequest, useSubmitOrgRequest } from '../hooks/useOrgRequests';
 
@@ -15,10 +16,13 @@ export default function BecomeOrganiserPage() {
   if (user && (user.role === 'organiser' || user.role === 'admin')) {
     return (
       <div className="max-w-2xl mx-auto text-center py-20">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-400/20 mb-4">
+          <CheckCircle className="w-8 h-8 text-emerald-400" />
+        </div>
+        <h1 className="text-2xl font-bold text-white mb-4">
           {t('becomeOrganiser.alreadyRole', { role: user.role })}
         </h1>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-zinc-400">
           {t('becomeOrganiser.canCreateEvents')}
         </p>
       </div>
@@ -39,38 +43,51 @@ export default function BecomeOrganiserPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600" />
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white" />
       </div>
     );
   }
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('becomeOrganiser.title')}</h1>
-      <p className="text-gray-600 dark:text-gray-400">
-        {t('becomeOrganiser.description')}
-      </p>
+      <div className="text-center">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-400/20 mb-4">
+          <Award className="w-7 h-7 text-amber-400" />
+        </div>
+        <h1 className="text-2xl font-bold text-white">{t('becomeOrganiser.title')}</h1>
+        <p className="text-zinc-400 mt-2">
+          {t('becomeOrganiser.description')}
+        </p>
+      </div>
 
       {/* Show existing request status */}
       {existingRequest && (
         <div
-          className={`rounded-lg p-4 text-sm ${
+          className={`rounded-3xl p-5 text-sm border ${
             existingRequest.status === 'pending'
-              ? 'bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300'
+              ? 'bg-amber-500/10 border-amber-400/20'
               : existingRequest.status === 'approved'
-                ? 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300'
-                : 'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
+                ? 'bg-emerald-500/10 border-emerald-400/20'
+                : 'bg-red-500/10 border-red-400/20'
           }`}
         >
-          <p className="font-semibold">
-            {t('becomeOrganiser.requestStatus')}{' '}
-            <span className="uppercase">{existingRequest.status}</span>
-          </p>
-          <p className="mt-1 text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-2 mb-2">
+            {existingRequest.status === 'pending' && <Clock className="w-4 h-4 text-amber-400" />}
+            {existingRequest.status === 'approved' && <CheckCircle className="w-4 h-4 text-emerald-400" />}
+            {existingRequest.status === 'rejected' && <XCircle className="w-4 h-4 text-red-400" />}
+            <p className={`font-semibold ${
+              existingRequest.status === 'pending' ? 'text-amber-300' :
+              existingRequest.status === 'approved' ? 'text-emerald-300' : 'text-red-300'
+            }`}>
+              {t('becomeOrganiser.requestStatus')}{' '}
+              <span className="uppercase">{existingRequest.status}</span>
+            </p>
+          </div>
+          <p className="text-zinc-400">
             {t('becomeOrganiser.submittedReason', { reason: existingRequest.reason })}
           </p>
           {existingRequest.reviewed_at && (
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            <p className="text-xs text-zinc-500 mt-1">
               {t('becomeOrganiser.reviewed', {
                 date: new Date(existingRequest.reviewed_at).toLocaleDateString(i18n.language),
               })}
@@ -83,16 +100,16 @@ export default function BecomeOrganiserPage() {
       {(!existingRequest || existingRequest.status === 'rejected') && (
         <form
           onSubmit={onSubmit}
-          className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 space-y-4"
+          className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4"
         >
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-md text-sm">
+            <div className="bg-red-500/10 border border-red-400/20 text-red-300 px-4 py-3 rounded-2xl text-sm">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
               {t('becomeOrganiser.formLabel')}
             </label>
             <textarea
@@ -101,7 +118,7 @@ export default function BecomeOrganiserPage() {
               minLength={10}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full bg-white/5 border border-white/10 text-white rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/20 placeholder-zinc-500"
               placeholder={t('becomeOrganiser.formPlaceholder')}
             />
           </div>
@@ -109,7 +126,7 @@ export default function BecomeOrganiserPage() {
           <button
             type="submit"
             disabled={submitRequest.isPending}
-            className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-md text-sm font-medium disabled:opacity-50"
+            className="bg-white text-zinc-900 px-6 py-2.5 rounded-full text-sm font-medium hover:bg-zinc-200 disabled:opacity-50 transition-colors"
           >
             {submitRequest.isPending ? t('becomeOrganiser.submitting') : t('becomeOrganiser.submitRequest')}
           </button>
