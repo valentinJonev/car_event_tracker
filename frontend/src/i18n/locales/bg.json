@@ -14,6 +14,9 @@
     "save": "Запази",
     "edit": "Редактирай",
     "share": "Сподели",
+    "copyLink": "Копирай линк",
+    "copied": "Копирано",
+    "moreActions": "Още действия",
     "or": "или",
     "by": "от",
     "to": "до",
@@ -43,6 +46,11 @@
     "signIn": "Вход",
     "signUp": "Регистрация",
     "menu": "Меню"
+  },
+  "roles": {
+    "user": "Потребител",
+    "organiser": "Организатор",
+    "admin": "Админ"
   },
   "theme": {
     "toggleDarkMode": "Превключи тъмен режим",
@@ -148,9 +156,11 @@
     "allDay": "Цял ден",
     "maxAttendees": "Макс. участници",
     "organiser": "Организатор",
+    "ends": "Край:",
     "description": "Описание",
     "noDescription": "Няма описание.",
-    "location": "Местоположение"
+    "location": "Местоположение",
+    "openInWaze": "Отвори в Waze"
   },
   "eventForm": {
     "createEvent": "Създай събитие",
@@ -314,8 +324,8 @@
     "failedToUpdateProfile": "Неуспешно обновяване на профил.",
     "facebookPageUrl": "URL на Facebook страница",
     "facebookPlaceholder": "https://facebook.com/yourpage",
-    "instagramPageUrl": "URL на Instagram страница",
-    "instagramPlaceholder": "https://instagram.com/yourprofile",
+    "instagramPageUrl": "Instagram потребителско име",
+    "instagramPlaceholder": "yourprofile",
     "saveSocialLinks": "Запази социални линкове",
     "socialLinksUpdated": "Социалните линкове са обновени.",
     "failedToUpdateSocialLinks": "Неуспешно обновяване на социални линкове.",
@@ -355,14 +365,51 @@
   },
   "admin": {
     "title": "Админ панел",
+    "dashboardHeading": "Управление на платформата",
+    "dashboardDescription": "Преглеждайте заявки за организатори, разглеждайте регистрираните потребители и управлявайте промотираното събитие на началната страница.",
+    "management": "Управление",
     "pendingRequests": "Чакащи заявки за организатор",
+    "approvalsSection": "Одобрение на организатори",
+    "usersSection": "Потребители",
+    "featuredSection": "Промотирано събитие",
     "failedToLoadRequests": "Неуспешно зареждане на заявки. Сигурни ли сте, че имате админ достъп?",
+    "failedToLoadUsers": "Неуспешно зареждане на потребители.",
     "noPendingRequests": "Няма чакащи заявки за организатор.",
+    "noUsers": "Няма намерени потребители.",
+    "searchUsersPlaceholder": "Търси потребители по име или имейл...",
     "unknownUser": "Неизвестен потребител",
     "submitted": "Подадена: {{date}}",
     "reason": "Причина",
     "approve": "Одобри",
-    "reject": "Отхвърли"
+    "reject": "Отхвърли",
+    "totalUsersLabel": "{{count}} регистрирани потребители",
+    "active": "Активен",
+    "inactive": "Неактивен",
+    "changeRole": "Промени роля",
+    "changeRoleForUser": "Обновете ролята за {{name}}.",
+    "roleLabel": "Роля",
+    "promotedEventTitle": "Текущо промотирано събитие",
+    "promotedEventDescription": "Изберете ръчно промотирано събитие или използвайте автоматичния избор на featured събитие.",
+    "promotedEventManual": "Ръчният избор е активен.",
+    "promotedEventAutomatic": "В момента е активен автоматичният избор.",
+    "promoteMostSubscribed": "Промотирай най-абонираното",
+    "forceSpecificEvent": "Фиксирай конкретно събитие",
+    "selectedEventLabel": "Избрано събитие",
+    "loadingEvent": "Зареждане...",
+    "unsavedFeaturedChanges": "Имате незапазени промени за промотираното събитие.",
+    "noPromotedEvent": "В момента няма налично събитие за промотиране.",
+    "selectPromotedEvent": "Избор на промотирано събитие",
+    "selectPromotedEventHint": "Търсете публикувани събития и закачете едно на началната страница.",
+    "searchEventsPlaceholder": "Търси събития по заглавие...",
+    "setAsPromoted": "Задай като промотирано",
+    "changeSelectedEvent": "Избери събитие",
+    "clearPromotedEvent": "Премахни override",
+    "noEventsFound": "Няма намерени съвпадащи публикувани събития.",
+    "confirmPromotedEventTitle": "Да се запазят ли настройките за промотираното събитие?",
+    "confirmPromotedEventAutomatic": "Това ще използва най-абонираното събитие като промотирано събитие.",
+    "confirmPromotedEventManual": "Това ще фиксира \"{{title}}\" като промотирано събитие на началната страница.",
+    "selectedEventFallback": "избраното събитие",
+    "confirmSavePromotedEvent": "Запази промените"
   },
   "becomeOrganiser": {
     "title": "Стани организатор",
@@ -387,5 +434,11 @@
     "searching": "Търсене...",
     "noOrganisersFound": "Няма намерени организатори",
     "typeToSearch": "Пишете за търсене..."
+  },
+  "footer": {
+    "copyright": "{{year}} Stay Informed. Всички права запазени.",
+    "privacy": "Политика за поверителност",
+    "terms": "Условия за ползване",
+    "contact": "Контакт"
   }
 }

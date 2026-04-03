@@ -1,7 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Calendar, MapPin, User, Share2, Plus, X, Check } from 'lucide-react';
+import { Calendar, MapPin, User, Share2, Plus, X, Check, MoreVertical } from 'lucide-react';
+import { FaWaze } from 'react-icons/fa';
+import { SiGooglemaps } from 'react-icons/si';
 import { useEvent, useDeleteEvent } from '../hooks/useEvents';
 import { useSavedEventStatus, useSaveEvent, useUnsaveEvent } from '../hooks/useCalendar';
 import { useAuthStore } from '../store/authStore';
@@ -17,6 +20,10 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
+  const [copied, setCopied] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [ownerMenuOpen, setOwnerMenuOpen] = useState(false);
+  const closeTimeoutRef = useRef<number | null>(null);
 
   const { data: event, isLoading, isError } = useEvent(eventId);
   const deleteEvent = useDeleteEvent();
@@ -31,14 +38,35 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
   const canEdit =
     user && event && (user.role === 'admin' || user.id === event.organiser_id);
 
+  const closeModal = () => {
+    setIsVisible(false);
+    if (closeTimeoutRef.current) {
+      window.clearTimeout(closeTimeoutRef.current);
+    }
+    closeTimeoutRef.current = window.setTimeout(() => {
+      onClose();
+      closeTimeoutRef.current = null;
+    }, 220);
+  };
+
+  useEffect(() => {
+    setIsVisible(true);
+
+    return () => {
+      if (closeTimeoutRef.current) {
+        window.clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Close on Escape
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') closeModal();
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose]);
+  }, []);
 
   // Prevent body scroll while modal is open
   useEffect(() => {
@@ -58,33 +86,47 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
 
   const handleDelete = async () => {
     if (!event) return;
+    setOwnerMenuOpen(false);
     if (!window.confirm(t('eventDetail.confirmCancel'))) return;
     await deleteEvent.mutateAsync(event.id);
-    onClose();
+    closeModal();
   };
 
   const handleShare = async () => {
     const url = `${window.location.origin}/events?detail=${eventId}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: event?.title, url });
-      } catch {
-        // user cancelled
-      }
-    } else {
+    try {
       await navigator.clipboard.writeText(url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // ignore clipboard failures
     }
   };
 
-  return (
+  return createPortal(
+    (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+      onClick={closeModal}
     >
       <div
+        className={`absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-200 ${
+          isVisible ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
+
+      <div
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-[32px] border border-white/10 bg-zinc-900 p-6 shadow-2xl"
+        className={`relative z-10 max-h-[calc(100vh-3rem)] w-full max-w-4xl overflow-y-auto rounded-[32px] border border-white/10 bg-zinc-900 p-6 shadow-2xl transition-all duration-200 ${
+          isVisible ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-4 scale-95 opacity-0'
+        }`}
       >
+        {copied && (
+          <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 rounded-full border border-green-400/30 bg-green-500/15 px-3 py-1 text-xs text-green-300">
+            {t('common.copied')}
+          </div>
+        )}
+
         {/* Loading */}
         {isLoading && (
           <div className="flex items-center justify-center py-20">
@@ -97,7 +139,7 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
           <div className="py-20 text-center">
             <p className="text-red-400">{t('eventDetail.eventNotFound')}</p>
             <button
-              onClick={onClose}
+              onClick={closeModal}
               className="mt-4 rounded-full border border-white/10 px-4 py-2 text-sm text-zinc-300"
             >
               {t('common.close', { defaultValue: 'Close' })}
@@ -108,6 +150,72 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
         {/* Content */}
         {event && (
           <>
+            <div className="absolute right-4 top-4 flex items-center gap-2">
+              {canEdit ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setOwnerMenuOpen((prev) => !prev)}
+                    className="rounded-full border border-white/10 bg-white/5 p-2 text-zinc-300 transition-colors hover:bg-white/10"
+                    title={t('common.moreActions', { defaultValue: 'More actions' })}
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+
+                  {ownerMenuOpen && (
+                    <div className="absolute right-0 top-12 z-20 min-w-[10rem] overflow-hidden rounded-2xl border border-white/10 bg-zinc-900 shadow-2xl">
+                      <button
+                        onClick={() => {
+                          setOwnerMenuOpen(false);
+                          closeModal();
+                          window.setTimeout(() => navigate(`/events/${event.id}/edit`), 180);
+                        }}
+                        className="block w-full px-4 py-3 text-left text-sm text-zinc-200 transition-colors hover:bg-white/5"
+                      >
+                        {t('common.edit')}
+                      </button>
+                      <button
+                        onClick={handleDelete}
+                        disabled={deleteEvent.isPending}
+                        className="block w-full border-t border-white/10 px-4 py-3 text-left text-sm text-red-300 transition-colors hover:bg-white/5 disabled:opacity-50"
+                      >
+                        {t('eventDetail.cancelEvent')}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : isAuthenticated ? (
+                <button
+                  onClick={handleToggleCalendar}
+                  disabled={calendarLoading}
+                  className={`rounded-full border p-2 transition-colors disabled:opacity-50 ${
+                    isSaved
+                      ? 'border-green-400/30 bg-green-500/15 text-green-300'
+                      : 'border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10'
+                  }`}
+                  title={
+                    isSaved
+                      ? t('eventDetail.removeFromCalendar')
+                      : t('eventDetail.addToCalendar')
+                  }
+                >
+                  {isSaved ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                </button>
+              ) : null}
+              <button
+                onClick={handleShare}
+                className="rounded-full border border-white/10 bg-white/5 p-2 text-zinc-300 transition-colors hover:bg-white/10"
+                title={t('common.copyLink', { defaultValue: 'Copy link' })}
+              >
+                <Share2 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={closeModal}
+                className="rounded-full border border-white/10 bg-white/5 p-2 text-zinc-300 transition-colors hover:bg-white/10"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
             {/* Header */}
             <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
@@ -121,14 +229,19 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
                       ({t('eventStatus.cancelled')})
                     </span>
                   )}
+                  {event.status === 'draft' && canEdit && (
+                    <span className="ml-3 text-base text-zinc-400">
+                      ({t('eventStatus.draft')})
+                    </span>
+                  )}
                 </h3>
-                <div className="mt-2 flex flex-wrap gap-3 text-sm text-zinc-400">
+                <div className="mt-2 flex flex-col gap-2 text-sm text-zinc-400 sm:flex-row sm:flex-wrap sm:gap-3">
                   {event.organiser && (
                     <span className="inline-flex items-center gap-2">
                       <User className="h-4 w-4" />
                       <Link
                         to={`/organisers/${event.organiser.id}`}
-                        onClick={onClose}
+                        onClick={closeModal}
                         className="hover:text-white hover:underline"
                       >
                         {event.organiser.display_name}
@@ -139,6 +252,18 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
                     <Calendar className="h-4 w-4" />
                     {formatEventDateLong(event.start_datetime, event.is_all_day, i18n.language)}
                   </span>
+                  {event.end_datetime && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="text-zinc-500">
+                        {t('eventDetail.ends', { defaultValue: 'Ends:' })}
+                      </span>
+                      {formatEventDateLong(
+                        event.end_datetime,
+                        event.is_all_day,
+                        i18n.language,
+                      )}
+                    </span>
+                  )}
                   <span className="inline-flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
                     {event.location_name}
@@ -164,40 +289,6 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
                 </div>
               </div>
 
-              {/* Action buttons */}
-              <div className="flex flex-shrink-0 gap-2">
-                <button
-                  onClick={handleShare}
-                  className="rounded-full border border-white/10 bg-white/5 p-2 text-zinc-300 transition-colors hover:bg-white/10"
-                  title={t('common.share', { defaultValue: 'Share' })}
-                >
-                  <Share2 className="h-4 w-4" />
-                </button>
-                {isAuthenticated && (
-                  <button
-                    onClick={handleToggleCalendar}
-                    disabled={calendarLoading}
-                    className={`rounded-full border p-2 transition-colors disabled:opacity-50 ${
-                      isSaved
-                        ? 'border-green-400/30 bg-green-500/15 text-green-300'
-                        : 'border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10'
-                    }`}
-                    title={
-                      isSaved
-                        ? t('eventDetail.removeFromCalendar')
-                        : t('eventDetail.addToCalendar')
-                    }
-                  >
-                    {isSaved ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                  </button>
-                )}
-                <button
-                  onClick={onClose}
-                  className="rounded-full border border-white/10 bg-white/5 p-2 text-zinc-300 transition-colors hover:bg-white/10"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
             </div>
 
             {/* Cover image */}
@@ -222,34 +313,7 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
                   </p>
 
                   {/* Additional details at bottom */}
-                  <div className="mt-auto space-y-3 border-t border-white/10 pt-4">
-                    {event.end_datetime && (
-                      <div>
-                        <span className="text-xs text-zinc-500">{t('common.to')}:</span>{' '}
-                        <span className="text-sm text-zinc-300">
-                          {formatEventDateLong(
-                            event.end_datetime,
-                            event.is_all_day,
-                            i18n.language,
-                          )}
-                        </span>
-                      </div>
-                    )}
-                    {event.organiser && (
-                      <div>
-                        <span className="text-xs text-zinc-500">
-                          {t('eventDetail.organiser')}:
-                        </span>{' '}
-                        <Link
-                          to={`/organisers/${event.organiser.id}`}
-                          onClick={onClose}
-                          className="text-sm text-zinc-300 hover:text-white hover:underline"
-                        >
-                          {event.organiser.display_name}
-                        </Link>
-                      </div>
-                    )}
-                  </div>
+                  <div className="mt-auto border-t border-white/10 pt-4" />
                 </div>
               </div>
 
@@ -260,14 +324,36 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
                     <div className="text-sm font-medium text-white">
                       {t('eventDetail.location')}
                     </div>
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location_name + (event.address ? ', ' + event.address : ''))}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-zinc-200 transition-colors hover:bg-white/10"
-                    >
-                      {t('eventDetail.openInMaps', { defaultValue: 'Open in Google Maps' })}
-                    </a>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location_name + (event.address ? ', ' + event.address : ''))}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-full border border-white/10 bg-white/5 px-2.5 py-2 text-xs text-zinc-200 transition-colors hover:bg-white/10 sm:px-3 sm:py-1.5"
+                        aria-label={t('eventDetail.openInMaps', { defaultValue: 'Open in Google Maps' })}
+                      >
+                        <span className="sm:hidden">
+                          <SiGooglemaps className="h-4 w-4" />
+                        </span>
+                        <span className="hidden sm:inline">
+                          {t('eventDetail.openInMaps', { defaultValue: 'Open in Google Maps' })}
+                        </span>
+                      </a>
+                      <a
+                        href={`https://waze.com/ul?ll=${event.latitude},${event.longitude}&navigate=yes`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-full border border-white/10 bg-white/5 px-2.5 py-2 text-xs text-zinc-200 transition-colors hover:bg-white/10 sm:px-3 sm:py-1.5"
+                        aria-label={t('eventDetail.openInWaze', { defaultValue: 'Open in Waze' })}
+                      >
+                        <span className="sm:hidden">
+                          <FaWaze className="h-4 w-4" />
+                        </span>
+                        <span className="hidden sm:inline">
+                          {t('eventDetail.openInWaze', { defaultValue: 'Open in Waze' })}
+                        </span>
+                      </a>
+                    </div>
                   </div>
                   <div className="flex-1 overflow-hidden rounded-3xl border border-white/10">
                     <EventMap
@@ -281,30 +367,11 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
               </div>
             </div>
 
-            {/* Owner / admin actions */}
-            {canEdit && (
-              <div className="mt-6 flex flex-wrap gap-3 border-t border-white/10 pt-5">
-                <button
-                  onClick={() => {
-                    onClose();
-                    navigate(`/events/${event.id}/edit`);
-                  }}
-                  className="rounded-2xl bg-white px-4 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200"
-                >
-                  {t('common.edit')}
-                </button>
-                <button
-                  onClick={handleDelete}
-                  disabled={deleteEvent.isPending}
-                  className="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-200 transition-colors hover:bg-red-500/20 disabled:opacity-50"
-                >
-                  {t('eventDetail.cancelEvent')}
-                </button>
-              </div>
-            )}
           </>
         )}
       </div>
     </div>
+    ),
+    document.body,
   );
 }

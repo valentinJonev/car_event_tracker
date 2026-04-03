@@ -148,6 +148,20 @@ export interface OrgRequestListResponse {
   total: number;
 }
 
+export interface UserListResponse {
+  items: User[];
+  total: number;
+}
+
+export interface FeaturedEventSettingResponse {
+  event_id: string | null;
+  message: string;
+}
+
+export interface SetFeaturedEventPayload {
+  event_id: string;
+}
+
 export interface EventFilters {
   event_type?: EventType;
   status?: EventStatus;

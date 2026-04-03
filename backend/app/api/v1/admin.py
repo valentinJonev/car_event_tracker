@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import require_role
 from app.database import get_db
 from app.models.organiser_request import OrgRequestStatus
 from app.models.user import User, UserRole
+from app.schemas.auth import UserListResponse, UserResponse
 from app.schemas.organiser_request import (
     OrgRequestListResponse,
     OrgRequestResponse,
@@ -28,6 +31,10 @@ from app.services.stats import (
 )
 
 router = APIRouter()
+
+
+class UserRoleUpdateRequest(BaseModel):
+    role: UserRole
 
 
 # ── Organiser requests ───────────────────────────────────────────────
@@ -70,6 +77,53 @@ async def review_organiser_request(
 
     reviewed = await review_request(db, request, data.status, current_user.id)
     return reviewed
+
+
+@router.get("/users", response_model=UserListResponse)
+async def list_users(
+    search: str | None = Query(None, min_length=1, max_length=100),
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    query = select(User)
+    count_query = select(func.count(User.id))
+
+    if search:
+        pattern = f"%{search}%"
+        filter_expr = or_(
+            func.lower(User.display_name).like(func.lower(pattern)),
+            func.lower(User.email).like(func.lower(pattern)),
+        )
+        query = query.where(filter_expr)
+        count_query = count_query.where(filter_expr)
+
+    users_result = await db.execute(query.order_by(User.created_at.desc()))
+    users = list(users_result.scalars().all())
+
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
+
+    return UserListResponse(items=[UserResponse.model_validate(user) for user in users], total=total)
+
+
+@router.put("/users/{user_id}/role", response_model=UserResponse)
+async def update_user_role(
+    user_id: UUID,
+    data: UserRoleUpdateRequest,
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    user.role = data.role
+    await db.flush()
+    await db.refresh(user)
+    return UserResponse.model_validate(user)
 
 
 # ── Featured event override ──────────────────────────────────────────

@@ -111,8 +111,8 @@ export default function EventMap({
     >
       <AutoFitBounds events={events} center={center} zoom={zoom} />
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
-        url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
       {events.map((event) => (
@@ -129,7 +129,7 @@ export default function EventMap({
                   className={`font-semibold hover:underline text-left ${
                     event.status === 'cancelled'
                       ? 'text-red-500 line-through'
-                      : 'text-white'
+                      : 'text-zinc-900'
                   }`}
                   style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                 >

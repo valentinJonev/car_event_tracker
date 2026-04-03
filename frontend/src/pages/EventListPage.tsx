@@ -135,7 +135,7 @@ export default function EventListPage() {
               </p>
             </div>
             {data && (
-              <div className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">
+              <div className="hidden rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300 sm:block">
                 {data.total} {t('eventList.matching', { defaultValue: 'matching' })}
               </div>
             )}

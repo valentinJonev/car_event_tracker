@@ -55,6 +55,11 @@ class UserResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class UserListResponse(BaseModel):
+    items: list[UserResponse]
+    total: int
+
+
 class UserUpdate(BaseModel):
     display_name: Optional[str] = Field(None, min_length=1, max_length=100)
     avatar_url: Optional[str] = Field(None, max_length=500)

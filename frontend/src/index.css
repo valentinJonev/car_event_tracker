@@ -23,3 +23,33 @@
   width: 100%;
   z-index: 0;
 }
+
+@keyframes fade-in-soft {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-down-sheet {
+  from {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@layer utilities {
+  .animate-fade-in-soft {
+    animation: fade-in-soft 180ms ease-out;
+  }
+
+  .animate-slide-down-sheet {
+    animation: slide-down-sheet 240ms ease-out;
+  }
+}

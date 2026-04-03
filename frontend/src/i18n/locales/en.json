@@ -14,6 +14,9 @@
     "save": "Save",
     "edit": "Edit",
     "share": "Share",
+    "copyLink": "Copy link",
+    "copied": "Copied",
+    "moreActions": "More actions",
     "or": "or",
     "by": "by",
     "to": "to",
@@ -43,6 +46,11 @@
     "signIn": "Sign In",
     "signUp": "Sign Up",
     "menu": "Menu"
+  },
+  "roles": {
+    "user": "User",
+    "organiser": "Organiser",
+    "admin": "Admin"
   },
   "theme": {
     "toggleDarkMode": "Toggle dark mode",
@@ -106,8 +114,8 @@
     "organizers": "Organizers",
     "featuredEvent": "Featured event",
     "featuredSubtitle": "Latest addition",
-    "adminPick": "Admin's pick",
-    "mostSaved": "Most saved by the community",
+    "adminPick": "Our pick",
+    "mostSaved": "Community's favourite",
     "viewAllEvents": "View all events",
     "recentlyAdded": "Recently added events",
     "recentlyAddedDesc": "Top 3 newest events added to the platform."
@@ -148,9 +156,11 @@
     "allDay": "All Day",
     "maxAttendees": "Max Attendees",
     "organiser": "Organiser",
+    "ends": "Ends:",
     "description": "Description",
     "noDescription": "No description provided.",
-    "location": "Location"
+    "location": "Location",
+    "openInWaze": "Open in Waze"
   },
   "eventForm": {
     "createEvent": "Create Event",
@@ -314,8 +324,8 @@
     "failedToUpdateProfile": "Failed to update profile.",
     "facebookPageUrl": "Facebook Page URL",
     "facebookPlaceholder": "https://facebook.com/yourpage",
-    "instagramPageUrl": "Instagram Page URL",
-    "instagramPlaceholder": "https://instagram.com/yourprofile",
+    "instagramPageUrl": "Instagram username",
+    "instagramPlaceholder": "yourprofile",
     "saveSocialLinks": "Save Social Links",
     "socialLinksUpdated": "Social links updated.",
     "failedToUpdateSocialLinks": "Failed to update social links.",
@@ -355,14 +365,51 @@
   },
   "admin": {
     "title": "Admin Dashboard",
+    "dashboardHeading": "Platform management",
+    "dashboardDescription": "Review organiser applications, browse registered users, and control the promoted event shown on the home page.",
+    "management": "Management",
     "pendingRequests": "Pending Organiser Requests",
+    "approvalsSection": "Organiser approvals",
+    "usersSection": "Users",
+    "featuredSection": "Promoted event",
     "failedToLoadRequests": "Failed to load requests. Are you sure you have admin access?",
+    "failedToLoadUsers": "Failed to load users.",
     "noPendingRequests": "No pending organiser requests.",
+    "noUsers": "No users found.",
+    "searchUsersPlaceholder": "Search users by name or email...",
     "unknownUser": "Unknown User",
     "submitted": "Submitted: {{date}}",
     "reason": "Reason",
     "approve": "Approve",
-    "reject": "Reject"
+    "reject": "Reject",
+    "totalUsersLabel": "{{count}} registered users",
+    "active": "Active",
+    "inactive": "Inactive",
+    "changeRole": "Change role",
+    "changeRoleForUser": "Update the role for {{name}}.",
+    "roleLabel": "Role",
+    "promotedEventTitle": "Current promoted event",
+    "promotedEventDescription": "Choose a manual promoted event or fall back to the automatic featured event selection.",
+    "promotedEventManual": "Manual override is active.",
+    "promotedEventAutomatic": "Automatic selection is currently active.",
+    "promoteMostSubscribed": "Most subscribed",
+    "forceSpecificEvent": "Specific event",
+    "selectedEventLabel": "Selected event",
+    "loadingEvent": "Loading...",
+    "unsavedFeaturedChanges": "You have unsaved changes.",
+    "noPromotedEvent": "There is no event selected for promotion right now.",
+    "selectPromotedEvent": "Choose event",
+    "selectPromotedEventHint": "Search published events and pin one to the home page.",
+    "searchEventsPlaceholder": "Search events by title...",
+    "setAsPromoted": "Set as promoted",
+    "changeSelectedEvent": "Choose event",
+    "clearPromotedEvent": "Clear override",
+    "noEventsFound": "No matching published events found.",
+    "confirmPromotedEventTitle": "Save promoted event settings?",
+    "confirmPromotedEventAutomatic": "This will use the most subscribed event as the promoted event.",
+    "confirmPromotedEventManual": "This will force-promote \"{{title}}\" on the home page.",
+    "selectedEventFallback": "the selected event",
+    "confirmSavePromotedEvent": "Save changes"
   },
   "becomeOrganiser": {
     "title": "Become an Organiser",
@@ -387,5 +434,11 @@
     "searching": "Searching...",
     "noOrganisersFound": "No organisers found",
     "typeToSearch": "Type to search..."
+  },
+  "footer": {
+    "copyright": "{{year}} Stay Informed. All rights reserved.",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "contact": "Contact"
   }
 }

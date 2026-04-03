@@ -1,28 +1,56 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, X, Home, CalendarDays, Map, Users, PlusCircle } from 'lucide-react';
+import { Menu, X, Home, CalendarDays, Map, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { RoleGuard } from './RoleGuard';
 import NotificationBell from './NotificationBell';
 import UserDropdown from './UserDropdown';
 
-function LanguageSwitcher() {
+function LanguageSwitcher({
+  className = '',
+  onClick,
+}: {
+  className?: string;
+  onClick?: () => void;
+}) {
   const { i18n } = useTranslation();
   const currentLang = i18n.language?.startsWith('bg') ? 'bg' : 'en';
+  const [isSwitching, setIsSwitching] = useState(false);
+  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
 
-  const toggle = () => {
-    i18n.changeLanguage(currentLang === 'en' ? 'bg' : 'en');
+  const toggle = async () => {
+    onClick?.();
+    setIsOverlayVisible(true);
+    setIsSwitching(true);
+    await Promise.all([
+      i18n.changeLanguage(currentLang === 'en' ? 'bg' : 'en'),
+      new Promise((resolve) => window.setTimeout(resolve, 500)),
+    ]);
+    setIsSwitching(false);
+    window.setTimeout(() => setIsOverlayVisible(false), 180);
   };
 
   return (
-    <button
-      onClick={toggle}
-      className="rounded-full border border-white/10 px-3 py-1.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-white/10 hover:text-white"
-      title={currentLang === 'en' ? 'Switch to Bulgarian' : 'Switch to English'}
-    >
-      {currentLang === 'en' ? 'BG' : 'EN'}
-    </button>
+    <>
+      <button
+        onClick={toggle}
+        disabled={isSwitching}
+        className={`rounded-full border border-white/10 px-3 py-1.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-wait disabled:opacity-70 ${className}`}
+        title={currentLang === 'en' ? 'Switch to Bulgarian' : 'Switch to English'}
+      >
+        {currentLang === 'en' ? 'BG' : 'EN'}
+      </button>
+
+      {isOverlayVisible && createPortal(
+        <div className={`fixed inset-0 z-[9999] flex items-center justify-center bg-zinc-950 transition-opacity duration-200 ${isSwitching ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="flex flex-col items-center gap-4 rounded-3xl border border-white/10 bg-zinc-900/90 px-6 py-5 shadow-2xl">
+            <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+          </div>
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }
 
@@ -49,7 +77,7 @@ export function Layout() {
   }, [mobileOpen]);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <div className="flex min-h-screen flex-col bg-zinc-950 text-white">
       {/* Navbar */}
       <nav className="sticky top-0 z-40 border-b border-white/10 bg-zinc-950/85 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
@@ -82,30 +110,11 @@ export function Layout() {
               </NavLink>
             ))}
 
-            {isAuthenticated && (
-              <>
-                <RoleGuard roles={['organiser', 'admin']}>
-                  <NavLink
-                    to="/events/new"
-                    className={({ isActive }) =>
-                      `min-w-[9rem] rounded-full px-4 py-2 text-center text-sm font-medium transition-colors ${
-                        isActive
-                          ? 'bg-white text-zinc-900'
-                          : 'border border-white/10 text-zinc-300 hover:bg-white/10 hover:text-white'
-                      }`
-                    }
-                  >
-                    {t('nav.createEvent')}
-                  </NavLink>
-                </RoleGuard>
-
-              </>
-            )}
           </div>
 
           {/* Right: Controls */}
           <div className="flex items-center gap-3">
-            <LanguageSwitcher />
+            <LanguageSwitcher className="hidden md:inline-flex" />
 
             {isAuthenticated ? (
               <>
@@ -113,7 +122,7 @@ export function Layout() {
                 <UserDropdown />
               </>
             ) : (
-              <>
+              <div className="hidden items-center gap-3 md:flex">
                 <Link
                   to="/login"
                   className="text-sm font-medium text-zinc-300 hover:text-white transition-colors"
@@ -126,7 +135,7 @@ export function Layout() {
                 >
                   {t('nav.signUp')}
                 </Link>
-              </>
+              </div>
             )}
 
             {/* Mobile menu toggle */}
@@ -171,6 +180,13 @@ export function Layout() {
 
           {/* Nav links */}
           <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+            <div className="px-1 pb-3">
+              <LanguageSwitcher
+                className="inline-flex w-full items-center justify-center"
+                onClick={() => setMobileOpen(false)}
+              />
+            </div>
+
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -193,29 +209,11 @@ export function Layout() {
               );
             })}
 
-            {isAuthenticated && (
-              <RoleGuard roles={['organiser', 'admin']}>
-                <NavLink
-                  to="/events/new"
-                  onClick={() => setMobileOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-white text-zinc-900'
-                        : 'text-zinc-300 hover:bg-white/5 hover:text-white'
-                    }`
-                  }
-                >
-                  <PlusCircle className="h-5 w-5 shrink-0" />
-                  {t('nav.createEvent')}
-                </NavLink>
-              </RoleGuard>
-            )}
           </nav>
 
           {/* Footer: auth actions for guests */}
           {!isAuthenticated && (
-            <div className="border-t border-white/10 px-4 py-4 space-y-2">
+            <div className="border-t border-white/10 px-4 pt-4 pb-8 space-y-4">
               <Link
                 to="/login"
                 onClick={() => setMobileOpen(false)}
@@ -232,13 +230,26 @@ export function Layout() {
               </Link>
             </div>
           )}
+
         </aside>
       </div>
 
       {/* Main content */}
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
         <Outlet />
       </main>
+
+      {/* Footer */}
+      <footer className="mt-auto border-t border-white/10">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-2 px-4 py-4 text-xs text-zinc-600 sm:flex-row sm:justify-between sm:px-6">
+          <p>&copy; {t('footer.copyright', { year: new Date().getFullYear() })}</p>
+          <div className="flex gap-4">
+            <span className="cursor-pointer transition-colors hover:text-zinc-400">{t('footer.privacy')}</span>
+            <span className="cursor-pointer transition-colors hover:text-zinc-400">{t('footer.terms')}</span>
+            <span className="cursor-pointer transition-colors hover:text-zinc-400">{t('footer.contact')}</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

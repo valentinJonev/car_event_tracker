@@ -206,11 +206,29 @@ function ProfileSection() {
 
 /* ── Social Links Section ──────────────────────────────────────────────── */
 
+function getInstagramHandle(value: string | null | undefined) {
+  if (!value) return '';
+
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+
+  const withoutAt = trimmed.replace(/^@/, '');
+  const match = withoutAt.match(/instagram\.com\/([^/?#]+)/i);
+
+  return (match?.[1] ?? withoutAt).replace(/^@/, '');
+}
+
+function normalizeInstagramHandle(value: string) {
+  const handle = value.trim().replace(/^@/, '');
+  if (!handle) return null;
+  return `https://instagram.com/${handle}`;
+}
+
 function SocialLinksSection() {
   const { t } = useTranslation();
   const { user, updateProfile } = useAuthStore();
   const [facebook, setFacebook] = useState(user?.social_links?.facebook ?? '');
-  const [instagram, setInstagram] = useState(user?.social_links?.instagram ?? '');
+  const [instagram, setInstagram] = useState(getInstagramHandle(user?.social_links?.instagram));
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -221,12 +239,12 @@ function SocialLinksSection() {
     setError(null);
     setSuccess(null);
     try {
-      await updateProfile({
-        social_links: {
-          facebook: facebook || null,
-          instagram: instagram || null,
-        },
-      });
+        await updateProfile({
+          social_links: {
+            facebook: facebook || null,
+            instagram: normalizeInstagramHandle(instagram),
+          },
+        });
       setSuccess(t('profile.socialLinksUpdated'));
     } catch {
       setError(t('profile.failedToUpdateSocialLinks'));
@@ -258,7 +276,7 @@ function SocialLinksSection() {
             {t('profile.instagramPageUrl')}
           </label>
           <input
-            type="url"
+            type="text"
             value={instagram}
             onChange={(e) => setInstagram(e.target.value)}
             placeholder={t('profile.instagramPlaceholder')}
