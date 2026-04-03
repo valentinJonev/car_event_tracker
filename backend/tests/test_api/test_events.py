@@ -6,6 +6,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.event import Event, EventStatus, EventType
+from app.services.event import get_event_by_id
 from app.models.user import User
 from tests.conftest import auth_headers
 
@@ -248,7 +249,7 @@ class TestUpdateEvent:
 
 @pytest.mark.asyncio
 class TestDeleteEvent:
-    async def test_delete_event_owner_success(
+    async def test_delete_event_owner_cancels_published_event(
         self,
         client: AsyncClient,
         db_session: AsyncSession,
@@ -259,8 +260,57 @@ class TestDeleteEvent:
             f"/api/v1/events/{event.id}",
             headers=auth_headers(test_organiser),
         )
-        assert response.status_code == 200
-        assert response.json()["status"] == "cancelled"
+        assert response.status_code == 204
+
+        updated = await get_event_by_id(db_session, event.id)
+        assert updated is not None
+        assert updated.status == EventStatus.CANCELLED
+
+    async def test_delete_event_owner_permanently_deletes_draft(
+        self,
+        client: AsyncClient,
+        db_session: AsyncSession,
+        test_organiser: User,
+    ):
+        event = await create_test_event(db_session, test_organiser, status="draft")
+        response = await client.delete(
+            f"/api/v1/events/{event.id}?permanent=true",
+            headers=auth_headers(test_organiser),
+        )
+        assert response.status_code == 204
+
+        deleted = await get_event_by_id(db_session, event.id)
+        assert deleted is None
+
+    async def test_delete_event_owner_cannot_permanently_delete_published(
+        self,
+        client: AsyncClient,
+        db_session: AsyncSession,
+        test_organiser: User,
+    ):
+        event = await create_test_event(db_session, test_organiser, status="published")
+        response = await client.delete(
+            f"/api/v1/events/{event.id}?permanent=true",
+            headers=auth_headers(test_organiser),
+        )
+        assert response.status_code == 403
+
+    async def test_delete_event_admin_can_permanently_delete(
+        self,
+        client: AsyncClient,
+        db_session: AsyncSession,
+        test_organiser: User,
+        test_admin: User,
+    ):
+        event = await create_test_event(db_session, test_organiser, status="published")
+        response = await client.delete(
+            f"/api/v1/events/{event.id}?permanent=true",
+            headers=auth_headers(test_admin),
+        )
+        assert response.status_code == 204
+
+        deleted = await get_event_by_id(db_session, event.id)
+        assert deleted is None
 
     async def test_delete_event_non_owner_forbidden(
         self,

@@ -24,6 +24,7 @@ from app.schemas.event import (
 )
 from app.services.event import (
     can_modify_event,
+    cancel_event,
     create_event,
     delete_event,
     find_nearby_events,
@@ -196,9 +197,10 @@ async def update_existing_event(
     return updated
 
 
-@router.delete("/{event_id}", response_model=EventResponse)
+@router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_existing_event(
     event_id: UUID,
+    permanent: bool = Query(False),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -212,5 +214,19 @@ async def delete_existing_event(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to delete this event",
         )
-    deleted = await delete_event(db, event)
-    return deleted
+
+    can_permanently_delete = current_user.role == UserRole.ADMIN or (
+        event.organiser_id == current_user.id and event.status == EventStatus.DRAFT
+    )
+
+    if permanent:
+        if not can_permanently_delete:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to permanently delete this event",
+            )
+        await delete_event(db, event)
+    else:
+        await cancel_event(db, event)
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

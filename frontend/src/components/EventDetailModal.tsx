@@ -16,6 +16,8 @@ interface EventDetailModalProps {
   onClose: () => void;
 }
 
+type ConfirmAction = 'cancel' | 'delete' | null;
+
 export default function EventDetailModal({ eventId, onClose }: EventDetailModalProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -23,7 +25,9 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
   const [copied, setCopied] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [ownerMenuOpen, setOwnerMenuOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const closeTimeoutRef = useRef<number | null>(null);
+  const ownerMenuRef = useRef<HTMLDivElement | null>(null);
 
   const { data: event, isLoading, isError } = useEvent(eventId);
   const deleteEvent = useDeleteEvent();
@@ -34,9 +38,12 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
   const unsaveEvent = useUnsaveEvent();
   const isSaved = savedStatus?.is_saved ?? false;
   const calendarLoading = saveEvent.isPending || unsaveEvent.isPending;
+  const isAdmin = user?.role === 'admin';
+  const isAuthor = Boolean(user && event && user.id === event.organiser_id);
 
-  const canEdit =
-    user && event && (user.role === 'admin' || user.id === event.organiser_id);
+  const canEdit = Boolean(
+    user && event && (user.role === 'admin' || user.id === event.organiser_id)
+  );
 
   const closeModal = () => {
     setIsVisible(false);
@@ -62,11 +69,16 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
   // Close on Escape
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeModal();
+      if (e.key !== 'Escape') return;
+      if (confirmAction) {
+        closeConfirmModal();
+        return;
+      }
+      closeModal();
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, []);
+  }, [confirmAction, deleteEvent.isPending]);
 
   // Prevent body scroll while modal is open
   useEffect(() => {
@@ -76,6 +88,19 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
     };
   }, []);
 
+  useEffect(() => {
+    if (!ownerMenuOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ownerMenuRef.current && !ownerMenuRef.current.contains(e.target as Node)) {
+        setOwnerMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('mousedown', handleClickOutside);
+    return () => window.removeEventListener('mousedown', handleClickOutside);
+  }, [ownerMenuOpen]);
+
   const handleToggleCalendar = () => {
     if (isSaved) {
       unsaveEvent.mutate(eventId);
@@ -84,11 +109,30 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
     }
   };
 
-  const handleDelete = async () => {
-    if (!event) return;
+  const openCancelConfirm = () => {
     setOwnerMenuOpen(false);
-    if (!window.confirm(t('eventDetail.confirmCancel'))) return;
-    await deleteEvent.mutateAsync(event.id);
+    setConfirmAction('cancel');
+  };
+
+  const openDeleteConfirm = () => {
+    setOwnerMenuOpen(false);
+    setConfirmAction('delete');
+  };
+
+  const closeConfirmModal = () => {
+    if (deleteEvent.isPending) return;
+    setConfirmAction(null);
+  };
+
+  const handleConfirmAction = async () => {
+    if (!event) return;
+    if (confirmAction === 'delete' && !isAdmin) return;
+
+    await deleteEvent.mutateAsync({
+      id: event.id,
+      permanent: confirmAction === 'delete',
+    });
+    setConfirmAction(null);
     closeModal();
   };
 
@@ -152,7 +196,7 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
           <>
             <div className="absolute right-4 top-4 flex items-center gap-2">
               {canEdit ? (
-                <div className="relative">
+                <div className="relative" ref={ownerMenuRef}>
                   <button
                     onClick={() => setOwnerMenuOpen((prev) => !prev)}
                     className="rounded-full border border-white/10 bg-white/5 p-2 text-zinc-300 transition-colors hover:bg-white/10"
@@ -173,13 +217,24 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
                       >
                         {t('common.edit')}
                       </button>
-                      <button
-                        onClick={handleDelete}
-                        disabled={deleteEvent.isPending}
-                        className="block w-full border-t border-white/10 px-4 py-3 text-left text-sm text-red-300 transition-colors hover:bg-white/5 disabled:opacity-50"
-                      >
-                        {t('eventDetail.cancelEvent')}
-                      </button>
+                      {isAuthor && (
+                        <button
+                          onClick={openCancelConfirm}
+                          disabled={deleteEvent.isPending}
+                          className="block w-full border-t border-white/10 px-4 py-3 text-left text-sm text-amber-300 transition-colors hover:bg-white/5 disabled:opacity-50"
+                        >
+                          {t('eventDetail.cancelEvent')}
+                        </button>
+                      )}
+                      {isAdmin && (
+                        <button
+                          onClick={openDeleteConfirm}
+                          disabled={deleteEvent.isPending}
+                          className="block w-full border-t border-white/10 px-4 py-3 text-left text-sm text-red-300 transition-colors hover:bg-white/5 disabled:opacity-50"
+                        >
+                          {t('eventDetail.deleteEvent', { defaultValue: 'Delete event' })}
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -215,6 +270,55 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
                 <X className="h-4 w-4" />
               </button>
             </div>
+
+            {confirmAction && (
+              <div
+                className="absolute inset-0 z-30 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
+                onClick={closeConfirmModal}
+              >
+                <div
+                  className="w-full max-w-md rounded-[28px] border border-white/10 bg-zinc-950 p-6 shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="text-lg font-semibold text-white">
+                    {confirmAction === 'delete'
+                      ? t('eventDetail.deleteEvent', { defaultValue: 'Delete event' })
+                      : t('eventDetail.cancelEvent')}
+                  </div>
+                  <p className="mt-2 text-sm text-zinc-400">
+                    {confirmAction === 'delete'
+                      ? t('eventDetail.confirmDeleteEvent', { defaultValue: 'Delete this event?' })
+                      : t('eventDetail.confirmCancel')}
+                  </p>
+                  <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={closeConfirmModal}
+                      disabled={deleteEvent.isPending}
+                      className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-white/10 disabled:opacity-50"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleConfirmAction()}
+                      disabled={deleteEvent.isPending}
+                      className={`rounded-full px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
+                        confirmAction === 'delete'
+                          ? 'bg-red-500 text-white hover:bg-red-400'
+                          : 'bg-amber-500 text-zinc-950 hover:bg-amber-400'
+                      }`}
+                    >
+                      {deleteEvent.isPending
+                        ? t('common.saving', { defaultValue: 'Saving...' })
+                        : confirmAction === 'delete'
+                          ? t('eventDetail.deleteEvent', { defaultValue: 'Delete event' })
+                          : t('eventDetail.cancelEvent')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Header */}
             <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -326,7 +430,7 @@ export default function EventDetailModal({ eventId, onClose }: EventDetailModalP
                     </div>
                     <div className="flex items-center gap-2">
                       <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location_name + (event.address ? ', ' + event.address : ''))}`}
+                        href={`https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}`}
                         target="_blank"
                         rel="noreferrer"
                         className="rounded-full border border-white/10 bg-white/5 px-2.5 py-2 text-xs text-zinc-200 transition-colors hover:bg-white/10 sm:px-3 sm:py-1.5"

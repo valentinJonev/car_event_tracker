@@ -118,7 +118,11 @@
     "mostSaved": "Най-запазвано събитие",
     "viewAllEvents": "Всички събития",
     "recentlyAdded": "Наскоро добавени събития",
-    "recentlyAddedDesc": "Топ 3 най-нови събития в платформата."
+    "recentlyAddedDesc": "Топ 3 най-нови събития в платформата.",
+    "latestImages": "Последно качени снимки",
+    "latestImagesTitle": "Нови визуализации на събития от общността",
+    "latestImagesDesc": "Наскоро качени корични изображения от новодобавени събития.",
+    "exploreEvents": "Разгледай събития"
   },
   "eventList": {
     "title": "Предстоящи събития",
@@ -142,13 +146,17 @@
   "eventDetail": {
     "backToEvents": "Обратно към събития",
     "viewDetails": "Детайли",
-    "openInMaps": "Отвори в Google Maps",
+    "openInMaps": "Google Maps",
     "addToCalendar": "Добави в календар",
     "inMyCalendar": "В моя календар",
     "removeFromCalendar": "Премахни от моя календар",
     "savingCalendar": "Запазване...",
     "cancelEvent": "Отмени събитие",
+    "deleteEvent": "Изтрий събитие",
+    "deleteDraft": "Изтрий събитие",
     "confirmCancel": "Сигурни ли сте, че искате да отмените това събитие?",
+    "confirmDeleteEvent": "Да се изтрие ли това събитие?",
+    "confirmDeleteDraft": "Да се изтрие ли тази чернова?",
     "eventNotFound": "Събитието не е намерено",
     "details": "Детайли",
     "when": "Кога",
@@ -160,7 +168,7 @@
     "description": "Описание",
     "noDescription": "Няма описание.",
     "location": "Местоположение",
-    "openInWaze": "Отвори в Waze"
+    "openInWaze": "Waze"
   },
   "eventForm": {
     "createEvent": "Създай събитие",
@@ -183,11 +191,20 @@
     "maxAttendees": "Макс. участници",
     "saving": "Запазване...",
     "updateEvent": "Обнови събитие",
+    "publishEvent": "Публикувай",
+    "saveAsDraft": "Запази като чернова",
+    "saveDraft": "Запази",
+    "saveEvent": "Запази",
     "selectStartDate": "Моля, изберете начална дата.",
     "selectStartTime": "Моля, изберете начален час.",
     "selectLocation": "Моля, изберете местоположение на картата.",
     "failedToSave": "Неуспешно запазване на събитие. Моля, проверете данните и опитайте отново.",
     "required": "*"
+  },
+  "locationPicker": {
+    "clickToSet": "Натиснете върху картата, за да поставите пин.",
+    "latLng": "Шир.: {{lat}}, Дълж.: {{lng}}",
+    "resolvedAddress": "Открит адрес: {{address}}"
   },
   "eventMap": {
     "eyebrow": "Разгледай събитията визуално",

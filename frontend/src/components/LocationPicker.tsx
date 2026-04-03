@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
@@ -25,6 +26,7 @@ interface LocationPickerProps {
   lat: number | null;
   lng: number | null;
   onChange: (lat: number, lng: number) => void;
+  onAddressResolved?: (address: string) => void;
 }
 
 function ClickHandler({ onChange }: { onChange: (lat: number, lng: number) => void }) {
@@ -40,10 +42,55 @@ export default function LocationPicker({
   lat,
   lng,
   onChange,
+  onAddressResolved,
 }: LocationPickerProps) {
   const { t } = useTranslation();
   const center: [number, number] =
     lat !== null && lng !== null ? [lat, lng] : [42.7, 25.5];
+  const [resolvedAddress, setResolvedAddress] = useState<string>('');
+
+  useEffect(() => {
+    if (lat === null || lng === null) {
+      setResolvedAddress('');
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const resolveAddress = async () => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
+          {
+            signal: controller.signal,
+            headers: {
+              Accept: 'application/json',
+            },
+          },
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as { display_name?: string };
+        const nextAddress = data.display_name?.trim() ?? '';
+
+        setResolvedAddress(nextAddress);
+        if (nextAddress) {
+          onAddressResolved?.(nextAddress);
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          return;
+        }
+      }
+    };
+
+    void resolveAddress();
+
+    return () => controller.abort();
+  }, [lat, lng, onAddressResolved]);
 
   return (
     <div className="space-y-2">
@@ -64,9 +111,19 @@ export default function LocationPicker({
         )}
       </MapContainer>
       {lat !== null && lng !== null && (
-        <p className="text-xs text-zinc-500">
-          {t('locationPicker.latLng', { lat: lat.toFixed(6), lng: lng.toFixed(6) })}
-        </p>
+        <div className="space-y-1">
+          <p className="text-xs text-zinc-500">
+            {t('locationPicker.latLng', { lat: lat.toFixed(6), lng: lng.toFixed(6) })}
+          </p>
+          {resolvedAddress && (
+            <p className="text-xs text-zinc-400">
+              {t('locationPicker.resolvedAddress', {
+                defaultValue: 'Detected address: {{address}}',
+                address: resolvedAddress,
+              })}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

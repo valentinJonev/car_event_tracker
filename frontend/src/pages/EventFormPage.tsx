@@ -9,8 +9,6 @@ const EVENT_TYPE_VALUES: EventType[] = [
   'racing', 'car_show', 'track_day', 'meetup', 'drift', 'drag', 'hillclimb', 'other',
 ];
 
-const STATUS_VALUES: EventStatus[] = ['draft', 'published'];
-
 const inputCls =
   'w-full bg-white/5 border border-white/10 text-white rounded-2xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/20 placeholder-zinc-500';
 
@@ -100,7 +98,7 @@ export default function EventFormPage() {
   }, [existing]);
 
   // ── Submit ──────────────────────────────────────────────────────────
-  const onSubmit = async (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent, nextStatus = status) => {
     e.preventDefault();
     setError(null);
 
@@ -134,7 +132,7 @@ export default function EventFormPage() {
       title,
       description: description || null,
       event_type: eventType,
-      status,
+      status: nextStatus,
       start_datetime: startIso,
       end_datetime: endIso,
       is_all_day: isAllDay,
@@ -160,6 +158,12 @@ export default function EventFormPage() {
   };
 
   const isPending = createEvent.isPending || updateEvent.isPending;
+  const isPublished = status === 'published';
+
+  const handleSubmitWithStatus = async (nextStatus: EventStatus) => {
+    const fakeEvent = { preventDefault() {} } as FormEvent;
+    await onSubmit(fakeEvent, nextStatus);
+  };
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -191,6 +195,24 @@ export default function EventFormPage() {
           />
         </div>
 
+        {/* Event type */}
+        <div>
+          <label className="block text-sm font-medium text-zinc-300 mb-1">
+            {t('eventForm.eventType')} {t('eventForm.required')}
+          </label>
+          <select
+            value={eventType}
+            onChange={(e) => setEventType(e.target.value as EventType)}
+            className={selectCls}
+          >
+            {EVENT_TYPE_VALUES.map((val) => (
+              <option key={val} value={val}>
+                {t(`eventTypes.${val}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Description */}
         <div>
           <label className="block text-sm font-medium text-zinc-300 mb-1">
@@ -204,45 +226,9 @@ export default function EventFormPage() {
           />
         </div>
 
-        {/* Type & Status */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1">
-              {t('eventForm.eventType')} {t('eventForm.required')}
-            </label>
-            <select
-              value={eventType}
-              onChange={(e) => setEventType(e.target.value as EventType)}
-              className={selectCls}
-            >
-              {EVENT_TYPE_VALUES.map((val) => (
-                <option key={val} value={val}>
-                  {t(`eventTypes.${val}`)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1">
-              {t('eventForm.status')}
-            </label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value as EventStatus)}
-              className={selectCls}
-            >
-              {STATUS_VALUES.map((val) => (
-                <option key={val} value={val}>
-                  {t(`eventStatus.${val}`)}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
         {/* ── Date & Time section ──────────────────────────────────────── */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <label className="block text-sm font-medium text-zinc-300">
               {t('eventForm.dateTime')}
             </label>
@@ -275,7 +261,7 @@ export default function EventFormPage() {
             <p className="text-xs text-zinc-500 mb-1 font-medium uppercase tracking-wide">
               {t('eventForm.start')} {t('eventForm.required')}
             </p>
-            <div className={`grid gap-3 ${isAllDay ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            <div className={`grid grid-cols-1 gap-3 ${isAllDay ? '' : 'sm:grid-cols-2'}`}>
               <input
                 type="date"
                 required
@@ -300,7 +286,7 @@ export default function EventFormPage() {
             <p className="text-xs text-zinc-500 mb-1 font-medium uppercase tracking-wide">
               {t('eventForm.end')} <span className="font-normal normal-case">{t('eventForm.endOptional')}</span>
             </p>
-            <div className={`grid gap-3 ${isAllDay ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            <div className={`grid grid-cols-1 gap-3 ${isAllDay ? '' : 'sm:grid-cols-2'}`}>
               <input
                 type="date"
                 value={endDate}
@@ -320,8 +306,8 @@ export default function EventFormPage() {
           </div>
         </div>
 
-        {/* Location name & address */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Location name */}
+        <div>
           <div>
             <label className="block text-sm font-medium text-zinc-300 mb-1">
               {t('eventForm.locationName')} {t('eventForm.required')}
@@ -333,17 +319,6 @@ export default function EventFormPage() {
               onChange={(e) => setLocationName(e.target.value)}
               className={inputCls}
               placeholder={t('eventForm.locationNamePlaceholder')}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1">
-              {t('eventForm.address')}
-            </label>
-            <input
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className={inputCls}
             />
           </div>
         </div>
@@ -360,11 +335,27 @@ export default function EventFormPage() {
               setLat(newLat);
               setLng(newLng);
             }}
+            onAddressResolved={(nextAddress) => {
+              setAddress(nextAddress);
+            }}
+          />
+        </div>
+
+        {/* Address */}
+        <div>
+          <label className="block text-sm font-medium text-zinc-300 mb-1">
+            {t('eventForm.address')}
+          </label>
+          <input
+            type="text"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            className={inputCls}
           />
         </div>
 
         {/* Extra fields */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="block text-sm font-medium text-zinc-300 mb-1">
               {t('eventForm.coverImageUrl')}
@@ -392,25 +383,44 @@ export default function EventFormPage() {
         </div>
 
         {/* Submit */}
-        <div className="flex justify-end gap-3 pt-2">
+        <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="px-5 py-2.5 border border-white/10 bg-white/5 rounded-full text-sm text-zinc-300 hover:bg-white/10 transition-colors"
+            className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm text-zinc-300 transition-colors hover:bg-white/10"
           >
             {t('common.cancel')}
           </button>
           <button
-            type="submit"
+            type="button"
             disabled={isPending}
-            className="bg-white text-zinc-900 px-6 py-2.5 rounded-full text-sm font-medium hover:bg-zinc-200 disabled:opacity-50 transition-colors"
+            onClick={() => void handleSubmitWithStatus(isPublished ? 'published' : 'draft')}
+            className={`rounded-full px-6 py-2.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+              isPublished
+                ? 'bg-white text-zinc-900 hover:bg-zinc-200'
+                : 'border border-white/10 bg-white/5 text-zinc-200 hover:bg-white/10'
+            }`}
           >
             {isPending
               ? t('eventForm.saving')
-              : isEdit
-                ? t('eventForm.updateEvent')
-                : t('eventForm.createEvent')}
+              : isPublished
+                ? t('eventForm.saveEvent', { defaultValue: 'Save' })
+                : isEdit
+                  ? t('eventForm.saveDraft', { defaultValue: 'Save' })
+                  : t('eventForm.saveAsDraft', { defaultValue: 'Save as draft' })}
           </button>
+          {!isPublished && (
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={() => void handleSubmitWithStatus('published')}
+              className="rounded-full bg-white px-6 py-2.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200 disabled:opacity-50"
+            >
+              {isPending
+                ? t('eventForm.saving')
+                : t('eventForm.publishEvent', { defaultValue: 'Publish' })}
+            </button>
+          )}
         </div>
       </form>
     </div>

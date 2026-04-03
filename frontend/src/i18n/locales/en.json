@@ -118,7 +118,11 @@
     "mostSaved": "Community's favourite",
     "viewAllEvents": "View all events",
     "recentlyAdded": "Recently added events",
-    "recentlyAddedDesc": "Top 3 newest events added to the platform."
+    "recentlyAddedDesc": "Top 3 newest events added to the platform.",
+    "latestImages": "Latest uploaded images",
+    "latestImagesTitle": "Fresh event visuals from the community",
+    "latestImagesDesc": "Recently uploaded cover images from newly added events.",
+    "exploreEvents": "Explore events"
   },
   "eventList": {
     "title": "Upcoming Events",
@@ -142,13 +146,17 @@
   "eventDetail": {
     "backToEvents": "Back to events",
     "viewDetails": "View details",
-    "openInMaps": "Open in Google Maps",
+    "openInMaps": "Google Maps",
     "addToCalendar": "Add to Calendar",
     "inMyCalendar": "In My Calendar",
     "removeFromCalendar": "Remove from My Calendar",
     "savingCalendar": "Saving...",
     "cancelEvent": "Cancel Event",
+    "deleteEvent": "Delete event",
+    "deleteDraft": "Delete event",
     "confirmCancel": "Are you sure you want to cancel this event?",
+    "confirmDeleteEvent": "Delete this event?",
+    "confirmDeleteDraft": "Delete this draft event?",
     "eventNotFound": "Event not found",
     "details": "Details",
     "when": "When",
@@ -160,7 +168,7 @@
     "description": "Description",
     "noDescription": "No description provided.",
     "location": "Location",
-    "openInWaze": "Open in Waze"
+    "openInWaze": "Waze"
   },
   "eventForm": {
     "createEvent": "Create Event",
@@ -183,11 +191,20 @@
     "maxAttendees": "Max Attendees",
     "saving": "Saving...",
     "updateEvent": "Update Event",
+    "publishEvent": "Publish",
+    "saveAsDraft": "Save as draft",
+    "saveDraft": "Save",
+    "saveEvent": "Save",
     "selectStartDate": "Please select a start date.",
     "selectStartTime": "Please select a start time.",
     "selectLocation": "Please select a location on the map.",
     "failedToSave": "Failed to save event. Please check your inputs and try again.",
     "required": "*"
+  },
+  "locationPicker": {
+    "clickToSet": "Click on the map to place the pin.",
+    "latLng": "Lat: {{lat}}, Lng: {{lng}}",
+    "resolvedAddress": "Detected address: {{address}}"
   },
   "eventMap": {
     "eyebrow": "Explore events visually",

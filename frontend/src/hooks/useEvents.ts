@@ -96,12 +96,12 @@ export function useUpdateEvent(id: string) {
 export function useDeleteEvent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { data } = await api.delete(`/events/${id}`);
-      return data as Event;
+    mutationFn: async ({ id, permanent = false }: { id: string; permanent?: boolean }) => {
+      await api.delete(`/events/${id}`, { params: { permanent } });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['events'] });
+      qc.invalidateQueries({ queryKey: ['event'] });
     },
   });
 }

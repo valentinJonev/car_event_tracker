@@ -5,10 +5,12 @@ from typing import Optional
 from uuid import UUID
 
 from geoalchemy2.functions import ST_DWithin, ST_Distance, ST_MakePoint, ST_SetSRID
-from sqlalchemy import and_, or_, func, select
+from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.event import Event, EventStatus, EventType
+from app.models.notification import Notification
+from app.models.saved_event import SavedEvent
 from app.models.user import User, UserRole
 from app.schemas.event import EventCreate, EventUpdate
 
@@ -63,12 +65,20 @@ async def update_event(
     return event
 
 
-async def delete_event(db: AsyncSession, event: Event) -> Event:
+async def cancel_event(db: AsyncSession, event: Event) -> Event:
     """Soft delete - set status to cancelled."""
     event.status = EventStatus.CANCELLED
     await db.flush()
     await db.refresh(event)
     return event
+
+
+async def delete_event(db: AsyncSession, event: Event) -> None:
+    """Permanently delete an event and dependent records."""
+    await db.execute(delete(SavedEvent).where(SavedEvent.event_id == event.id))
+    await db.execute(delete(Notification).where(Notification.event_id == event.id))
+    await db.delete(event)
+    await db.flush()
 
 
 async def list_events(
